@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeremy's Economy Arcade Console</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-color: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-color: #f8fafc;
+            --success-color: #22c55e;
+            --gold-color: #f59e0b;
+            --error-color: #ef4444;
+            --purple-color: #a855f7;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-watermark {
+            position: fixed;
+            font-size: 9vw;
+            font-weight: 900;
+            color: rgba(56, 189, 248, 0.02);
+            z-index: -1;
+            user-select: none;
+            pointer-events: none;
+            text-transform: uppercase;
+            animation: pulseText 6s infinite ease-in-out;
+        }
+        #wm-left { top: 15%; left: -2%; transform: rotate(-10deg); }
+        #wm-right { bottom: 15%; right: -2%; transform: rotate(10deg); animation-delay: 3s; }
+
+        @keyframes pulseText {
+            0% { opacity: 0.3; transform: scale(1) rotate(-10deg); }
+            50% { opacity: 0.6; transform: scale(1.05) rotate(-8deg); }
+            100% { opacity: 0.3; transform: scale(1) rotate(-10deg); }
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            margin: 40px 20px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        #splash-screen { display: block; }
+
+        h1, h2, h3 {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .error-message-text {
+            color: var(--error-color);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error-color);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0 20px 0;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+        }
+
+        button {
+            background: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .header-widget {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .credit-count { color: var(--gold-color); display: flex; align-items: center; gap: 6px; }
+        .menu-grid { display: flex; flex-direction: column; gap: 14px; }
+
+        .nav-btn {
+            background: #1e293b;
+            border: 2px solid #334155;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: #273549;
+            border-color: #475569;
+            transform: translateX(4px);
+        }
+
+        .catalog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .game-item {
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .game-details h4 { margin: 0 0 4px 0; color: #fff; font-size: 16px; }
+        .game-details p { margin: 0; font-size: 13px; color: #94a3b8; }
+        .highscore-tag { font-size: 12px; color: var(--gold-color); margin-top: 4px; font-weight: 600; }
+        
+        .action-btn { padding: 10px 18px; font-size: 14px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; color: white; }
+        .action-btn.play { background: var(--success-color); }
+        .action-btn.lock { background: #475569; color: #cbd5e1; }
+        .action-btn.delete { background: var(--error-color); }
+        
+        .action-btn.lock.affordable-btn { 
+            background: var(--success-color) !important; 
+            animation: pulseGlow 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+
+        #study-box-display { font-size: 22px; font-weight: 800; margin-bottom: 20px; padding: 20px; border-radius: 12px; text-align: center; color: #fff; background: #0f172a; border: 1px solid rgba(255,255,255,0.05); }
+        #canvas-viewport { position: relative; background: #070a12; padding: 8px; border-radius: 16px; border: 2px solid #334155; }
+        canvas { background: #020408; display: block; margin: 0 auto; width: 100%; height: auto; aspect-ratio: 4 / 3; touch-action: none; border-radius: 8px; }
+        
+        .hud-row { display: flex; justify-content: space-between; background: #0f172a; padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; font-weight: 700; }
+        #tetris-controls { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 260px; margin: 12px auto; }
+        .game-foot-row { display: flex; justify-content: space-between; margin-top: 14px; gap: 10px; }
+        
+        #toast-banner { display: none; position: fixed; top: 20px; background: #ef4444; color: white; padding: 14px 28px; border-radius: 12px; font-weight: 700; z-index: 1000; text-align: center; box-shadow: 0 10px 25px rgba(239,68,68,0.4); }
+        
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.9);
+            border-radius: 16px;
+            z-index: 50;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 2px solid var(--purple-color);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+        }
+
+        .modal-options { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
+        .modal-opt-btn { background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .modal-opt-btn:hover { background: #334155; border-color: var(--purple-color); }
+
+        .board-container {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #334155;
+        }
+        .board-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 4px;
+        }
+        .board-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .terminal-log {
+            background: #020408;
+            font-family: monospace;
+            font-size: 11px;
+            color: #4ade80;
+            padding: 10px;
+            border-radius: 8px;
+            height: 110px;
+            overflow-y: auto;
+            text-align: left;
+            border: 1px solid #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-watermark" id="wm-left">Arcade Arena</div>
+    <div class="bg-watermark" id="wm-right">No Popups</div>
+
+    <div id="toast-banner">Notification</div>
+
+    <div id="splash-screen" class="screen" style="text-align: center;">
+        <h1 style="color: var(--accent-color); font-size: 32px; margin-bottom: 10px;">Jeremy's Arcade</h1>
+        <p style="color: #94a3b8; margin-bottom: 40px; font-size: 16px;">Step into the ultimate mathematical gaming experience.</p>
+        <button id="splash-continue-btn" style="width: 100%; font-size: 18px; padding: 16px;">Continue to Login Portal ➔</button>
+    </div>
+
+    <div id="token-auth-screen" class="screen">
+        <h2 style="color: var(--gold-color); margin-top: 0;">Console Token Entry</h2>
+        <p style="color: #94a3b8; text-align: center; margin-bottom: 25px;">Enter the global security keycode to initialize authentication channels.</p>
+        
+        <div id="token-auth-error" class="error-message-text">Incorrect security keycode! Reference master documentation.</div>
+
+        <div>
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">SYSTEM KEYCODE:</label>
+            <input type="password" id="sys-token-input" placeholder="Enter security keycode here...">
+        </div>
+        <button id="token-submit-btn" style="width: 100%; background: var(--accent-color); color: #0f172a;">Verify Console Key ➔</button>
+        <button id="token-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Splash</button>
+    </div>
+
+    <div id="gateway-screen" class="screen" style="text-align: center;">
+        <h2 style="color: var(--accent-color); margin-top: 0;">Access Portal</h2>
+        <p style="color: #94a3b8; margin-bottom: 30px;">Choose whether to access an existing profile or configure a brand new identity.</p>
+        <div class="menu-grid">
+            <button id="gateway-login-btn" style="background: var(--success-color); color: white;">Log In to Existing Account</button>
+            <button id="gateway-register-btn" style="background: #475569; color: white;">Register New Account</button>
+            <button id="gateway-back-btn" style="background:#0f172a; border: 1px solid #334155; color: white; margin-top: 10px;">➔ Back to Keycode Entry</button>
+        </div>
+    </div>
+
+    <div id="register-profile-screen" class="screen">
+        <h2 style="color: var(--accent-color); margin-top: 0;">Account Setup (1/2)</h2>
+        <p style="color: #94a3b8; margin-bottom: 25px; text-align: center;">Please provide your basic structural profile info.</p>
+        
+        <div id="register-profile-error" class="error-message-text">Fields cannot be blank!</div>
+
+        <div>
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">USERNAME / IDENTITY</label>
+            <input type="text" id="reg-name-input" placeholder="Enter your full name...">
+            
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">EDUCATIONAL GRADE LEVEL (3-11)</label>
+            <select id="reg-grade-select">
+                <option value="Grade 3">Grade 3</option>
+                <option value="Grade 4">Grade 4</option>
+                <option value="Grade 5">Grade 5</option>
+                <option value="Grade 6">Grade 6</option>
+                <option value="Grade 7">Grade 7</option>
+                <option value="Grade 8">Grade 8</option>
+                <option value="Grade 9">Grade 9</option>
+                <option value="Grade 10">Grade 10</option>
+                <option value="Grade 11">Grade 11</option>
+            </select>
+        </div>
+        <button id="reg-profile-next-btn" style="width: 100%; margin-top: 10px;">Next: Secure Account ➔</button>
+        <button id="reg-profile-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Portal</button>
+    </div>
+
+    <div id="register-password-screen" class="screen">
+        <h2 style="color: var(--purple-color); margin-top: 0;">System Security (2/2)</h2>
+        <p style="color: #94a3b8; margin-bottom: 25px; text-align: center;">Enter the global arcade system keycode to register.</p>
+        
+        <div id="register-password-error" class="error-message-text">Incorrect or invalid system keycode!</div>
+
+        <div>
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">ARCADE KEYCODE:</label>
+            <input type="password" id="reg-pass-input" placeholder="Type jeremearcadee here...">
+        </div>
+        <button id="reg-password-submit-btn" style="width: 100%; margin-top: 10px;">Finalize Registration ➔</button>
+        <button id="reg-password-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Identity Setup</button>
+    </div>
+
+    <div id="login-screen" class="screen">
+        <h2 style="color: var(--success-color); margin-top: 0;">Profile Login</h2>
+        <p style="color: #94a3b8; text-align: center; margin-bottom: 25px;">Enter your credentials carefully to open your saved dashboard.</p>
+        
+        <div id="login-error" class="error-message-text">Invalid login parameters!</div>
+
+        <div>
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">LOGIN NAME:</label>
+            <input type="text" id="login-name-input" placeholder="Type 'admin' or your username...">
+            
+            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">PASSWORD / KEYCODE:</label>
+            <input type="password" id="login-pass-input" placeholder="Enter password or jeremearcadee...">
+        </div>
+        <button id="login-submit-btn" style="width: 100%;">Access Arcade Profile ➔</button>
+        <button id="login-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Portal</button>
+    </div>
+
+    <div id="admin-dashboard-screen" class="screen">
+        <div class="header-widget">
+            <div style="color:var(--purple-color); font-weight:900;">👑 SYSTEM CONTROL CENTER</div>
+            <div class="credit-count" style="color:var(--purple-color);">🪙 <span>∞</span> Credits</div>
+        </div>
+
+        <h3 style="text-align:left; margin:0 0 10px 0; font-size:14px; color:#cbd5e1;">All Created Accounts</h3>
+        <div class="catalog-list" id="admin-accounts-list" style="max-height:200px;"></div>
+
+        <h3 style="text-align:left; margin:15px 0 5px 0; font-size:14px; color:#cbd5e1;">System Operations Terminal Log</h3>
+        <div class="terminal-log" id="admin-terminal-log"></div>
+
+        <button id="admin-logout-btn" style="background:var(--error-color); width:100%; color:white; margin-top:20px;">Disconnect Admin Console</button>
+    </div>
+
+    <div id="hub-screen" class="screen">
+        <div class="header-widget">
+            <div id="welcome-banner">Welcome, User</div>
+            <div class="credit-count">🪙 <span id="hub-credits">0</span> Credits</div>
+        </div>
+        <div class="menu-grid">
+            <button class="nav-btn" id="nav-play-btn"><span>🎮 Browse Available Games</span><span>➔</span></button>
+            <button class="nav-btn" id="nav-learn-hub-btn" style="border-color: var(--success-color);"><span>✏️ Access Available Lessons</span><span>➔</span></button>
+            <button class="nav-btn" id="nav-settings-btn" style="border-color: #64748b;"><span>⚙️ Open Security Settings</span><span>➔</span></button>
+            <button class="nav-btn" id="logout-btn" style="background:#475569; padding:12px; font-size:14px; margin-top:10px; color:white; justify-content:center;">Disconnect Session</button>
+        </div>
+    </div>
+
+    <div id="settings-screen" class="screen">
+        <h2 style="color: #cbd5e1; margin-top: 0;">Profile Security</h2>
+        <p style="color: #94a3b8; font-size:14px; margin-bottom:30px; text-align:center;">Manage your structural account identity data records locally.</p>
+        
+        <div style="background:#0f172a; padding:16px; border-radius:12px; border:1px solid #334155; margin-bottom:25px;">
+            <h4 style="margin:0 0 8px 0; color:var(--error-color); text-transform:uppercase;">Danger Zone</h4>
+            <p style="margin:0 0 15px 0; font-size:13px; color:#94a3b8;">This will wipe your progress and remove your profile from this environment.</p>
+            <button id="delete-own-account-btn" style="background:var(--error-color); color:white; width:100%; padding:12px;">Delete Account Permanently</button>
+        </div>
+
+        <button id="exit-settings-btn" style="background:#475569; color:white; width:100%;">Return to Main Menu</button>
+    </div>
+
+    <div id="learn-hub-screen" class="screen">
+        <div class="header-widget">
+            <div>Mathematics Academy Modules</div>
+            <div class="credit-count">🪙 <span id="learn-hub-credits">0</span> Credits</div>
+        </div>
+        <div class="menu-grid">
+            <button class="nav-btn" id="topic-ratio-btn" style="border-color: var(--gold-color);"><span>🧮 Ratio Fundamentals</span><span>✏️</span></button>
+            <button class="nav-btn" id="topic-perimeter-btn" style="border-color: var(--accent-color);"><span>📐 Perimeter Calculations</span><span>✏️</span></button>
+            <button class="nav-btn" id="topic-area-btn" style="border-color: var(--purple-color);"><span>🟥 Area Determinations</span><span>✏️</span></button>
+            <button class="nav-btn" id="exit-learn-hub-btn" style="background:#475569; justify-content:center; color:white;">Return to Main Menu</button>
+        </div>
+    </div>
+
+    <div id="math-warning-screen" class="screen" style="text-align:center;">
+        <h2 style="color:var(--gold-color); margin-top:0;">Module Protocols</h2>
+        <div style="background:#0f172a; padding:22px; border-radius:14px; font-size:16px; margin-bottom:24px; line-height:1.6; font-weight:bold; border: 2px solid #f59e0b; text-align:left;">
+            <div style="color:var(--success-color); margin-bottom:8px;">• Correct responses yield +15 Credits</div>
+            <div style="color:var(--error-color);">• Incorrect responses penalize -10 Credits</div>
+        </div>
+        <button id="start-math-btn" style="background:var(--success-color); width:100%; font-size:18px; padding:15px; margin-bottom:10px; color:white;">Begin Assessment</button>
+        <button id="cancel-math-btn" style="background:#475569; width:100%; color:white;">Cancel</button>
+    </div>
+
+    <div id="learn-screen" class="screen">
+        <div class="header-widget" style="margin-bottom:10px;">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <div id="math-classroom-title" style="font-weight:800; color:var(--accent-color);">Module Workspace</div>
+                <div id="math-classroom-grade" style="font-size:12px; color:#94a3b8;">Grade</div>
+            </div>
+            <div class="credit-count">🪙 <span id="learn-credits">0</span> Credits</div>
+        </div>
+        <div id="study-box-display">Formulating academic challenge...</div>
+        <div class="study-options" id="study-options-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <button id="exit-learn-btn" style="width:100%; background:#475569; margin-top:20px; color:white;">Exit Module</button>
+    </div>
+
+    <div id="catalog-screen" class="screen">
+        <div class="header-widget">
+            <div>Available Games</div>
+            <div class="credit-count">🪙 <span id="catalog-credits">0</span> Credits</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+            <div class="board-container">
+                <div class="board-title">📈 Top Balance</div>
+                <div id="leaderboard-high-rich"></div>
+            </div>
+            <div class="board-container">
+                <div class="board-title">📉 Low Balance</div>
+                <div id="leaderboard-low-poor"></div>
+            </div>
+        </div>
+
+        <div class="catalog-list" id="catalog-list-element"></div>
+        <button id="exit-catalog-btn" style="width:100%; background:#475569; margin-top:15px; color:white;">Return to Main Menu</button>
+    </div>
+
+    <div id="arena-screen" class="screen" style="position:relative;">
+        <div class="modal-overlay" id="math-disruption-overlay">
+            <div class="modal-card">
+                <h3 style="color:var(--purple-color); margin-top:0; font-weight:900;">⚠️ DISRUPTION ENCOUNTERED</h3>
+                <p style="color:#cbd5e1; font-size:13px; margin-top:-5px;">Provide the accurate response to secure safe passage!</p>
+                <p id="modal-question-text" style="color:white; font-size:18px; font-weight:700; margin:15px 0;"></p>
+                <div class="modal-options" id="modal-options-container"></div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="game-over-overlay">
+            <div class="modal-card" style="border-color: var(--error-color);">
+                <h3 style="color:var(--error-color); margin-top:0; font-weight:900; font-size:24px;">RUN CONCLUDED</h3>
+                <p id="game-over-message-text" style="color:white; font-size:16px; margin:15px 0; font-weight:600;"></p>
+                <button id="modal-close-run-btn" style="background:var(--accent-color); width:100%; color:#0f172a;">Return to Catalog</button>
+            </div>
+        </div>
+
+        <div class="hud-row">
+            <div>Score: <span id="arena-score">0</span></div>
+            <div id="brick-balls-counter" style="color:var(--accent-color); display:none;">Balls Remaining: 3</div>
+            <div>Record: <span id="arena-highscore">0</span></div>
+            <div id="game-math-ticker" style="color:var(--error-color);">Next Event: 20s</div>
+        </div>
+        <div id="canvas-viewport">
+            <canvas id="gameCanvas" width="400" height="380"></canvas>
+        </div>
+        <div id="tetris-controls">
+            <button class="nav-btn" id="t-left" style="padding:12px; justify-content:center;">◀</button>
+            <button class="nav-btn" id="t-rot" style="padding:12px; background:var(--accent-color); color:#0f172a; justify-content:center;">🔄</button>
+            <button class="nav-btn" id="t-right" style="padding:12px; justify-content:center;">▶</button>
+            <div></div>
+            <button class="nav-btn" id="t-down" style="padding:12px; justify-content:center;">▼</button>
+            <div></div>
+        </div>
+        <div class="game-foot-row">
+            <button id="pause-afk-btn" style="background:#f59e0b; color:#0f172a;">Pause Simulation</button>
+            <button id="quit-arena-btn" style="background:var(--error-color); color:white;">End Run</button>
+        </div>
+    </div>
+
+    <script>
+        let registeredProfilesDatabase = {}; 
+        let activeLoggedUserKey = null;
+        let systemLogHistory = [];
+
+        let userDataProfile = { name: "Guest", grade: "Grade 3" };
+        let userCredits = 0;
+        let sessionTimer = 0;
+        let healthAlertTriggered = false;
+        let isAdminModeActive = false;
+        let selectedMathTopic = "Ratio";
+
+        let registrationInProgress = { name: "", grade: "" };
+
+        let currentSpeedMultiplier = 1.0;
+        let invincibilityTimerActive = false;
+        let emergencyHazardsActive = false;
+        let modificationStateExpiryTime = 0;
+
+        let highscores = {
+            dino: 0, ninja: 0, clicker: 0, catcher: 0, tetris: 0,
+            pong: 0, snake: 0, invader: 0, flappy: 0, breakout: 0
+        };
+
+        const MASTER_BLUEPRINT_MANIFEST = [
+            { id: 'dino', name: '1. Chrono T-Rex Run', desc: 'Evade oncoming primeval hazards across an endless desert.', playPrice: 25, requiredUnlock: 0, unlocked: true },
+            { id: 'ninja', name: '2. Velocity Blade', desc: 'Slice ascending geometric targets inside a high-speed matrix.', playPrice: 25, requiredUnlock: 0, unlocked: true },
+            { id: 'clicker', name: '3. Meteor Intercept', desc: 'Neutralize falling spatial anomalies before catastrophic impact.', playPrice: 25, requiredUnlock: 0, unlocked: true },
+            { id: 'catcher', name: '4. Node Collector', desc: 'Secure descending high-value structural components cleanly.', playPrice: 25, requiredUnlock: 0, unlocked: true },
+            { id: 'tetris', name: '5. Spatial Matrix', desc: 'Organize dropping structural blocks to complete lines.', playPrice: 25, requiredUnlock: 0, unlocked: true },
+            { id: 'pong', name: '6. Cybernetic Deflector', desc: 'Manipulate vector fields against a predictive AI component.', playPrice: 25, requiredUnlock: 100, unlocked: false },
+            { id: 'snake', name: '7. Vector Constrictor', desc: 'Synthesize data trails avoiding perimeter walls and collisions.', playPrice: 25, requiredUnlock: 150, unlocked: false },
+            { id: 'invader', name: '8. Perimeter Shield', desc: 'Neutralize descending defensive arrays systematically.', playPrice: 25, requiredUnlock: 200, unlocked: false },
+            { id: 'flappy', name: '9. Aviary Flight', desc: 'Navigate vibrant architectural caverns despite constant gravity.', playPrice: 25, requiredUnlock: 250, unlocked: false },
+            { id: 'breakout', name: '10. Brick Demolition', desc: 'Deconstruct structural layers via ball rebounds across 3 lives.', playPrice: 25, requiredUnlock: 300, unlocked: false }
+        ];
+
+        let GAMES_MANIFEST = [];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentActiveGameId = null;
+        let score = 0;
+        let isEnginePaused = false;
+        let runFrameRequest = null;
+        let midGameMathInterval = null;
+        let gameCountdownClock = 20;
+
+        let activeCorrectOptionIdx = 0;
+        let pointer = { x: 0, y: 0, isDown: false, prevX: 0, prevY: 0 };
+        let gameState = {};
+
+        const SHAPES = [
+            [[1, 1, 1, 1]], [[1, 1, 1], [0, 1, 0]], [[1, 1, 1], [1, 0, 0]],
+            [[1, 1, 1], [0, 0, 1]], [[1, 1], [1, 1]], [[1, 1, 0], [0, 1, 1]], [[0, 1, 1], [1, 1, 0]]
+        ];
+        const COLORS = ['#38bdf8', '#c084fc', '#60a5fa', '#fb923c', '#facc15', '#4ade80', '#f87171'];
+
+        function pushTerminalSystemLog(message) {
+            const time = new Date().toLocaleTimeString();
+            systemLogHistory.unshift(`[${time}] ${message}`);
+            if(systemLogHistory.length > 40) systemLogHistory.pop();
+            
+            const logEl = document.getElementById('admin-terminal-log');
+            if(logEl) {
+                logEl.innerHTML = systemLogHistory.join("<br>");
+            }
+        }
+
+        window.addEventListener('load', () => {
+            loadApplicationMasterDatabase();
+            autoInjectAdminAccount();
+        });
+
+        function autoInjectAdminAccount() {
+            registeredProfilesDatabase["admin"] = {
+                name: "Admin",
+                grade: "All Levels",
+                password: "jerethebest9142",
+                credits: 9999999, 
+                highscores: { dino: 999, ninja: 999, clicker: 999, catcher: 999, tetris: 999, pong: 999, snake: 999, invader: 999, flappy: 999, breakout: 999 },
+                unlockedGames: ['dino', 'ninja', 'clicker', 'catcher', 'tetris', 'pong', 'snake', 'invader', 'flappy', 'breakout']
+            };
+            pushTerminalSystemLog("System Engine: Pre-built admin account synced automatically into engine runtime registry.");
+        }
+
+        document.getElementById('splash-continue-btn').addEventListener('click', () => {
+            document.getElementById('token-auth-error').style.display = 'none';
+            document.getElementById('sys-token-input').value = "";
+            navigateTo('token-auth-screen');
+        });
+
+        document.getElementById('token-submit-btn').addEventListener('click', () => {
+            const tokenInput = document.getElementById('sys-token-input').value.trim();
+            const errBox = document.getElementById('token-auth-error');
+            errBox.style.display = 'none';
+
+            if (tokenInput === "jeremearcadee") {
+                showToast("Console token verification accepted.");
+                pushTerminalSystemLog("Token Authorization: Access code signature accepted.");
+                navigateTo('gateway-screen');
+            } else {
+                errBox.style.display = 'block';
+            }
+        });
+
+        document.getElementById('token-back-btn').addEventListener('click', () => navigateTo('splash-screen'));
+        document.getElementById('gateway-back-btn').addEventListener('click', () => navigateTo('token-auth-screen'));
+        document.getElementById('reg-profile-back-btn').addEventListener('click', () => navigateTo('gateway-screen'));
+        document.getElementById('reg-password-back-btn').addEventListener('click', () => navigateTo('register-profile-screen'));
+        document.getElementById('login-back-btn').addEventListener('click', () => navigateTo('gateway-screen'));
+
+        document.getElementById('gateway-login-btn').addEventListener('click', () => {
+            document.getElementById('login-error').style.display = 'none';
+            navigateTo('login-screen');
+        });
+        document.getElementById('gateway-register-btn').addEventListener('click', () => {
+            document.getElementById('register-profile-error').style.display = 'none';
+            navigateTo('register-profile-screen');
+        });
+
+        document.getElementById('reg-profile-next-btn').addEventListener('click', () => {
+            const chosenName = document.getElementById('reg-name-input').value.trim();
+            const errBox = document.getElementById('register-profile-error');
+            errBox.style.display = 'none';
+
+            if (!chosenName) {
+                errBox.style.display = 'block';
+                return;
+            }
+            if(chosenName.toLowerCase() === 'admin') {
+                errBox.innerText = "System identity reservation conflict! Choose another username.";
+                errBox.style.display = 'block';
+                return;
+            }
+            registrationInProgress.name = chosenName;
+            registrationInProgress.grade = document.getElementById('reg-grade-select').value;
+            navigateTo('register-password-screen');
+        });
+
+        document.getElementById('reg-password-submit-btn').addEventListener('click', () => {
+            const inputCode = document.getElementById('reg-pass-input').value.trim();
+            const errBox = document.getElementById('register-password-error');
+            errBox.style.display = 'none';
+
+            if (inputCode !== "jeremearcadee") {
+                errBox.style.display = 'block';
+                return;
+            }
+
+            let accountKey = registrationInProgress.name.toLowerCase();
+            registeredProfilesDatabase[accountKey] = {
+                name: registrationInProgress.name,
+                grade: registrationInProgress.grade,
+                password: "jeremearcadee", 
+                credits: 100, 
+                highscores: { dino: 0, ninja: 0, clicker: 0, catcher: 0, tetris: 0, pong: 0, snake: 0, invader: 0, flappy: 0, breakout: 0 },
+                unlockedGames: ['dino', 'ninja', 'clicker', 'catcher', 'tetris']
+            };
+
+            saveApplicationMasterDatabase();
+            pushTerminalSystemLog(`Registered user profile: ${registrationInProgress.name} using system keycode.`);
+            showToast("Account registration approved!");
+            
+            document.getElementById('reg-name-input').value = "";
+            document.getElementById('reg-pass-input').value = "";
+            navigateTo('login-screen');
+        });
+
+        document.getElementById('login-submit-btn').addEventListener('click', () => {
+            const inputName = document.getElementById('login-name-input').value.trim();
+            const inputPass = document.getElementById('login-pass-input').value.trim();
+            const errBox = document.getElementById('login-error');
+            errBox.style.display = 'none';
+
+            let accountKey = inputName.toLowerCase();
+            let targetAccount = registeredProfilesDatabase[accountKey];
+
+            if (accountKey === 'admin') {
+                if (inputPass === "jerethebest9142") {
+                    isAdminModeActive = true;
+                    activeLoggedUserKey = 'admin';
+                    userCredits = Infinity;
+                    highscores = targetAccount.highscores;
+                    GAMES_MANIFEST = JSON.parse(JSON.stringify(MASTER_BLUEPRINT_MANIFEST));
+                    GAMES_MANIFEST.forEach(g => g.unlocked = true);
+
+                    pushTerminalSystemLog("Global Master Administrator security verification successful.");
+                    showToast("Admin access approved.");
+                    renderAdminDashboardProfiles();
+                    navigateTo('admin-dashboard-screen');
+                    return;
+                }
+            } 
+            else if (targetAccount && inputPass === "jeremearcadee") {
+                isAdminModeActive = false;
+                activeLoggedUserKey = accountKey;
+                userDataProfile.name = targetAccount.name;
+                userDataProfile.grade = targetAccount.grade;
+                userCredits = targetAccount.credits;
+                highscores = targetAccount.highscores;
+
+                GAMES_MANIFEST = JSON.parse(JSON.stringify(MASTER_BLUEPRINT_MANIFEST));
+                GAMES_MANIFEST.forEach(g => {
+                    g.unlocked = targetAccount.unlockedGames.includes(g.id);
+                });
+
+                document.getElementById('welcome-banner').innerText = `${userDataProfile.name} (${userDataProfile.grade})`;
+                pushTerminalSystemLog(`User workspace context session established: ${userDataProfile.name}`);
+                showToast(`Welcome back, ${userDataProfile.name}!`);
+                navigateTo('hub-screen');
+                return;
+            }
+            
+            errBox.style.display = 'block';
+        });
+
+        function renderAdminDashboardProfiles() {
+            const container = document.getElementById('admin-accounts-list');
+            container.innerHTML = "";
+            
+            Object.keys(registeredProfilesDatabase).forEach(key => {
+                const acc = registeredProfilesDatabase[key];
+                const card = document.createElement('div');
+                card.className = "game-item";
+                card.style.borderColor = (key === 'admin') ? 'var(--purple-color)' : '#334155';
+                
+                let creditsLabel = (key === 'admin') ? "∞" : acc.credits;
+                let actionsColumnHTML = (key === 'admin') ? 
+                    `<span style="color:var(--purple-color); font-size:12px; font-weight:bold;">SYSTEM IMMUNE</span>` : 
+                    `<button class="action-btn delete" onclick="adminDeleteAccountTarget('${key}')">Drop Profile</button>`;
+
+                card.innerHTML = `
+                    <div class="game-details">
+                        <h4 style="color:${(key === 'admin') ? 'var(--purple-color)' : '#fff'}">${acc.name}</h4>
+                        <p>Grade Target: ${acc.grade} | Keycode Validation: <span style="font-family:monospace; color:var(--gold-color);">${acc.password}</span></p>
+                        <div class="highscore-tag">Economy Liquidity: 🪙 ${creditsLabel} Credits</div>
+                    </div>
+                    <div>${actionsColumnHTML}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function adminDeleteAccountTarget(profileKey) {
+            if(profileKey === 'admin') return;
+            const targetName = registeredProfilesDatabase[profileKey].name;
+            if(confirm(`Confirm administrative command to permanently delete account: "${targetName}"?`)) {
+                delete registeredProfilesDatabase[profileKey];
+                saveApplicationMasterDatabase();
+                pushTerminalSystemLog(`Administrative force-dropped account profile records: ${targetName}`);
+                renderAdminDashboardProfiles();
+                showToast("Account deleted successfully.");
+            }
+        }
+
+        document.getElementById('admin-logout-btn').addEventListener('click', () => {
+            isAdminModeActive = false;
+            activeLoggedUserKey = null;
+            document.getElementById('login-name-input').value = "";
+            document.getElementById('login-pass-input').value = "";
+            pushTerminalSystemLog("Administrative workspace sessions closed cleanly.");
+            navigateTo('splash-screen');
+        });
+
+        document.getElementById('nav-settings-btn').addEventListener('click', () => navigateTo('settings-screen'));
+        document.getElementById('exit-settings-btn').addEventListener('click', () => navigateTo('hub-screen'));
+        
+        document.getElementById('delete-own-account-btn').addEventListener('click', () => {
+            if(!activeLoggedUserKey || activeLoggedUserKey === 'admin') return;
+            if(confirm("CRITICAL PROTOCOL: Are you absolutely sure you want to delete your account? This actions wipes all progress and cannot be undone!")) {
+                const legacyName = userDataProfile.name;
+                delete registeredProfilesDatabase[activeLoggedUserKey];
+                activeLoggedUserKey = null;
+                saveApplicationMasterDatabase();
+                
+                pushTerminalSystemLog(`User self-deleted their active profile container: ${legacyName}`);
+                alert("Your account profile workspace records have been safely detached.");
+                location.reload();
+            }
+        });
+
+        function renderEconomyLeaderboards() {
+            const richBox = document.getElementById('leaderboard-high-rich');
+            const poorBox = document.getElementById('leaderboard-low-poor');
+            
+            let accountArrays = Object.keys(registeredProfilesDatabase)
+                .filter(k => k !== 'admin')
+                .map(k => registeredProfilesDatabase[k]);
+
+            let richSorted = [...accountArrays].sort((a,b) => b.credits - a.credits).slice(0, 3);
+            richBox.innerHTML = richSorted.length ? "" : "<div style='font-size:11px; color:#64748b;'>No users tracked.</div>";
+            richSorted.forEach((user, idx) => {
+                richBox.innerHTML += `
+                    <div class="board-row">
+                        <span style="font-weight:bold; color:var(--gold-color);">${idx+1}. ${user.name}</span>
+                        <span style="color:#cbd5e1;">🪙${user.credits}</span>
+                    </div>
+                `;
+            });
+
+            let poorSorted = [...accountArrays].sort((a,b) => a.credits - b.credits).slice(0, 3);
+            poorBox.innerHTML = poorSorted.length ? "" : "<div style='font-size:11px; color:#64748b;'>No users tracked.</div>";
+            poorSorted.forEach((user, idx) => {
+                poorBox.innerHTML += `
+                    <div class="board-row">
+                        <span style="font-weight:bold; color:var(--error-color);">${idx+1}. ${user.name}</span>
+                        <span style="color:#cbd5e1;">🪙${user.credits}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function saveApplicationMasterDatabase() {
+            if (activeLoggedUserKey && activeLoggedUserKey !== 'admin' && registeredProfilesDatabase[activeLoggedUserKey]) {
+                registeredProfilesDatabase[activeLoggedUserKey].credits = userCredits;
+                registeredProfilesDatabase[activeLoggedUserKey].highscores = highscores;
+                registeredProfilesDatabase[activeLoggedUserKey].unlockedGames = GAMES_MANIFEST.filter(g => g.unlocked).map(g => g.id);
+            }
+            localStorage.setItem('arcade_accounts_db_v5', JSON.stringify(registeredProfilesDatabase));
+        }
+
+        function loadApplicationMasterDatabase() {
+            const savedRaw = localStorage.getItem('arcade_accounts_db_v5');
+            if (savedRaw) {
+                registeredProfilesDatabase = JSON.parse(savedRaw);
+            } else {
+                registeredProfilesDatabase = {};
+            }
+        }
+
+        function navigateTo(targetId) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById(targetId).style.display = 'block';
+            
+            let displayCredits = isAdminModeActive ? "∞" : userCredits;
+            document.getElementById('hub-credits').innerText = displayCredits;
+            document.getElementById('learn-hub-credits').innerText = displayCredits;
+            document.getElementById('learn-credits').innerText = displayCredits;
+            document.getElementById('catalog-credits').innerText = displayCredits;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast-banner');
+            t.innerText = msg; t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2500);
+        }
+
+        setInterval(() => {
+            if (currentActiveGameId && !isEnginePaused && !isAdminModeActive && !document.getElementById('math-disruption-overlay').style.display === 'flex') {
+                sessionTimer++;
+                if (sessionTimer >= 600 && !healthAlertTriggered) {
+                    healthAlertTriggered = true;
+                    alert("hey enough learn again");
+                    quitGameEngine();
+                    navigateTo('learn-hub-screen');
+                }
+            }
+        }, 1000);
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            saveApplicationMasterDatabase();
+            pushTerminalSystemLog(`User context closed session: ${userDataProfile.name}`);
+            activeLoggedUserKey = null;
+            userCredits = 0;
+            document.getElementById('login-name-input').value = "";
+            document.getElementById('login-pass-input').value = "";
+            navigateTo('splash-screen');
+        });
+
+        document.getElementById('nav-play-btn').addEventListener('click', () => { 
+            renderCatalogList(); 
+            renderEconomyLeaderboards();
+            navigateTo('catalog-screen'); 
+        });
+        document.getElementById('nav-learn-hub-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
+        
+        function routeToWarning(topic, label) {
+            selectedMathTopic = topic;
+            document.getElementById('math-classroom-title').innerText = label;
+            navigateTo('math-warning-screen');
+        }
+        document.getElementById('topic-ratio-btn').addEventListener('click', () => routeToWarning('Ratio', 'Ratio Workspace'));
+        document.getElementById('topic-perimeter-btn').addEventListener('click', () => routeToWarning('Perimeter', 'Perimeter Calculations'));
+        document.getElementById('topic-area-btn').addEventListener('click', () => routeToWarning('Area', 'Area Determinations'));
+
+        document.getElementById('exit-learn-hub-btn').addEventListener('click', () => navigateTo('hub-screen'));
+        document.getElementById('cancel-math-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
+        document.getElementById('start-math-btn').addEventListener('click', () => { 
+            document.getElementById('math-classroom-grade').innerText = userDataProfile.grade;
+            renderStudyChallenge(); navigateTo('learn-screen'); 
+        });
+        document.getElementById('exit-learn-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
+        document.getElementById('exit-catalog-btn').addEventListener('click', () => navigateTo('hub-screen'));
+        document.getElementById('quit-arena-btn').addEventListener('click', () => quitGameEngine());
+        document.getElementById('modal-close-run-btn').addEventListener('click', () => {
+            document.getElementById('game-over-overlay').style.display = 'none';
+            quitGameEngine();
+        });
+
+        document.getElementById('pause-afk-btn').addEventListener('click', () => {
+            isEnginePaused = !isEnginePaused;
+            document.getElementById('pause-afk-btn').innerText = isEnginePaused ? "Resume Simulation" : "Pause Simulation";
+        });
+
+        function generateMathProblem() {
+            let q = "", ans = "", opts = [];
+            let factor = Math.floor(Math.random() * 4) + 2;
+            let valA = Math.floor(Math.random() * 6) + 3;
+            let valB = Math.floor(Math.random() * 6) + 3;
+
+            if (selectedMathTopic === 'Ratio') {
+                if(Math.random() > 0.5) {
+                    q = `Simplify the following ratio: ${valA * factor} : ${valB * factor}`;
+                    ans = `${valA} : ${valB}`;
+                    opts = [ans, `${valA+1} : ${valB}`, `${valA} : ${valB+1}`, `${valA*2} : ${valB}`];
+                } else {
+                    let product = valB * factor * 2;
+                    q = `Solve for X in the linear proportion: ${valA} : ${valB} = ${valA*2} : X`;
+                    ans = String(product);
+                    opts = [ans, String(product - 2), String(product + factor), String(product * 2)];
+                }
+            } else if (selectedMathTopic === 'Perimeter') {
+                let w = Math.floor(Math.random() * 8) + 4;
+                let h = Math.floor(Math.random() * 6) + 3;
+                let p = 2 * (w + h);
+                q = `A rectangle possesses a width of ${w}cm and a height of ${h}cm. Calculate its perimeter.`;
+                ans = String(p);
+                opts = [ans, String(w + h), String(p + 4), String(p - 2)];
+            } else if (selectedMathTopic === 'Area') {
+                let base = Math.floor(Math.random() * 7) + 5;
+                let height = Math.floor(Math.random() * 5) + 4;
+                let area = base * height;
+                q = `Determine the total area of a plane with a base dimension of ${base}m and a height of ${height}m.`;
+                ans = String(area);
+                opts = [ans, String(base + height), String(area + base), String(area - 5)];
+            }
+
+            opts = [...new Set(opts)].map(String);
+            while(opts.length < 4) opts.push(String(parseInt(ans) + Math.floor(Math.random() * 12) + 1));
+            opts.sort(() => Math.random() - 0.5);
+            activeCorrectOptionIdx = opts.indexOf(String(ans));
+            return { q, opts };
+        }
+
+        function renderStudyChallenge() {
+            const screenPanel = document.getElementById('learn-screen');
+            screenPanel.style.backgroundColor = 'var(--panel-color)';
+            const data = generateMathProblem();
+            document.getElementById('study-box-display').innerText = data.q;
+            const optionsContainer = document.getElementById('study-options-container');
+            optionsContainer.innerHTML = ""; optionsContainer.style.pointerEvents = 'auto';
+
+            data.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "nav-btn"; btn.style.padding = "14px"; btn.style.justifyContent = "center";
+                btn.innerText = opt;
+                btn.onclick = () => evaluateStudyAnswer(idx, screenPanel);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function evaluateStudyAnswer(selected, panel) {
+            document.getElementById('study-options-container').style.pointerEvents = 'none';
+            if (selected === activeCorrectOptionIdx) {
+                if(!isAdminModeActive) userCredits += 15;
+                panel.style.backgroundColor = '#166534'; 
+                document.getElementById('study-box-display').innerText = "Correct Response! Reward confirmed.";
+                pushTerminalSystemLog(`${userDataProfile.name} answered study lesson question CORRECTLY.`);
+            } else {
+                if(!isAdminModeActive) userCredits = Math.max(0, userCredits - 10);
+                panel.style.backgroundColor = '#991b1b'; 
+                document.getElementById('study-box-display').innerText = "Incorrect Response! Points deducted.";
+                pushTerminalSystemLog(`${userDataProfile.name} answered study lesson question INCORRECTLY.`);
+            }
+            document.getElementById('learn-credits').innerText = isAdminModeActive ? "∞" : userCredits;
+            saveApplicationMasterDatabase();
+            setTimeout(() => { renderStudyChallenge(); }, 1200);
+        }
+
+        function renderCatalogList() {
+            const container = document.getElementById('catalog-list-element');
+            container.innerHTML = "";
+            GAMES_MANIFEST.forEach((g) => {
+                const card = document.createElement('div'); card.className = "game-item";
+                let actionHTML = "";
+                if (g.unlocked || isAdminModeActive) {
+                    let costTag = isAdminModeActive ? "FREE" : "25¢";
+                    actionHTML = `<button class="action-btn play" onclick="launchGameEntry('${g.id}')">Launch (${costTag})</button>`;
+                } else {
+                    let affClass = (userCredits >= g.requiredUnlock) ? "affordable-btn" : "";
+                    actionHTML = `<button class="action-btn lock ${affClass}" onclick="unlockCatalogGame('${g.id}', ${g.requiredUnlock})">Unlock (${g.requiredUnlock}¢)</button>`;
+                }
+                card.innerHTML = `
+                    <div class="game-details">
+                        <h4>${g.name}</h4><p>${g.desc}</p>
+                        <div class="highscore-tag">Personal Record: ${highscores[g.id] || 0}</div>
+                    </div>
+                    <div>${actionHTML}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function unlockCatalogGame(id, cost) {
+            if(isAdminModeActive) return;
+            if(userCredits >= cost) {
+                userCredits -= cost;
+                const target = GAMES_MANIFEST.find(g => g.id === id);
+                if(target) target.unlocked = true;
+                saveApplicationMasterDatabase();
+                renderCatalogList();
+                document.getElementById('catalog-credits').innerText = userCredits;
+                pushTerminalSystemLog(`${userDataProfile.name} unlocked game matrix: ${id}`);
+            } else { showToast("Insufficient arcade balance!"); }
+        }
+
+        function triggerInGameMathDisruption() {
+            isEnginePaused = true;
+            const modal = document.getElementById('math-disruption-overlay');
+            const data = generateMathProblem();
+            
+            document.getElementById('modal-question-text').innerText = data.q;
+            const container = document.getElementById('modal-options-container');
+            container.innerHTML = "";
+            
+            data.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "modal-opt-btn";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    const currentTime = Date.now();
+                    if (idx === activeCorrectOptionIdx) {
+                        showToast("Correct! Performance modifiers activated.");
+                        currentSpeedMultiplier = 1.7;
+                        invincibilityTimerActive = true;
+                        emergencyHazardsActive = false;
+                        modificationStateExpiryTime = currentTime + 5000;
+                        pushTerminalSystemLog(`In-Game Event: ${userDataProfile.name} solved disruption CORRECTLY.`);
+                    } else {
+                        score = Math.max(0, score - 15);
+                        showToast("Incorrect! Heavy hazard structural variance encountered.");
+                        currentSpeedMultiplier = 1.0;
+                        invincibilityTimerActive = false;
+                        emergencyHazardsActive = true;
+                        modificationStateExpiryTime = currentTime + 5000;
+                        pushTerminalSystemLog(`In-Game Event: ${userDataProfile.name} failed disruption challenge.`);
+                    }
+                    modal.style.display = 'none';
+                    gameCountdownClock = 20;
+                    isEnginePaused = false;
+                };
+                container.appendChild(btn);
+            });
+            modal.style.display = 'flex';
+        }
+
+        function triggerGameOverModal(message) {
+            isEnginePaused = true;
+            clearInterval(midGameMathInterval);
+            document.getElementById('game-over-message-text').innerText = message;
+            document.getElementById('game-over-overlay').style.display = 'flex';
+            pushTerminalSystemLog(`Run Concluded for ${userDataProfile.name}. Achieved Score: ${score}`);
+        }
+
+        function launchGameEntry(id) {
+            if(!isAdminModeActive) {
+                if(userCredits < 25) { showToast("A balance of 25 credits is required to enter this simulation!"); return; }
+                userCredits -= 25;
+            }
+            saveApplicationMasterDatabase();
+            
+            currentActiveGameId = id; score = 0; isEnginePaused = false; gameCountdownClock = 20; healthAlertTriggered = false;
+            currentSpeedMultiplier = 1.0; invincibilityTimerActive = false; emergencyHazardsActive = false;
+            
+            document.getElementById('arena-score').innerText = "0";
+            document.getElementById('arena-highscore').innerText = highscores[id] || 0;
+            document.getElementById('tetris-controls').style.display = (id === 'tetris') ? 'grid' : 'none';
+            document.getElementById('brick-balls-counter').style.display = (id === 'breakout') ? 'block' : 'none';
+            
+            document.getElementById('math-disruption-overlay').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
+            navigateTo('arena-screen');
+            initGameSubstate(id);
+
+            pushTerminalSystemLog(`${userDataProfile.name} launched arcade game: ${id}`);
+
+            clearInterval(midGameMathInterval);
+            midGameMathInterval = setInterval(() => {
+                if(!isEnginePaused && document.getElementById('math-disruption-overlay').style.display !== 'flex' && document.getElementById('game-over-overlay').style.display !== 'flex') {
+                    gameCountdownClock--;
+                    document.getElementById('game-math-ticker').innerText = `Next Event: ${gameCountdownClock}s`;
+                    if(gameCountdownClock <= 0) { triggerInGameMathDisruption(); }
+                }
+            }, 1000);
+
+            if(runFrameRequest) cancelAnimationFrame(runFrameRequest);
+            executeCoreEngineLoop();
+        }
+
+        function quitGameEngine() {
+            if(score > (highscores[currentActiveGameId] || 0)) highscores[currentActiveGameId] = score;
+            cancelAnimationFrame(runFrameRequest); clearInterval(midGameMathInterval);
+            document.getElementById('math-disruption-overlay').style.display = 'none';
+            document.getElementById('game-over-overlay').style.display = 'none';
+            currentActiveGameId = null;
+            saveApplicationMasterDatabase();
+            
+            if(isAdminModeActive) {
+                renderAdminDashboardProfiles();
+                navigateTo('admin-dashboard-screen');
+            } else {
+                renderCatalogList(); 
+                navigateTo('catalog-screen');
+            }
+        }
+
+        function executeCoreEngineLoop() {
+            if(!isEnginePaused) {
+                if (invincibilityTimerActive || emergencyHazardsActive) {
+                    if (Date.now() > modificationStateExpiryTime) {
+                        invincibilityTimerActive = false;
+                        emergencyHazardsActive = false;
+                        currentSpeedMultiplier = 1.0;
+                        showToast("Operational status returned to nominal metrics.");
+                    }
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                processGameTickAndGraphics();
+                document.getElementById('arena-score').innerText = score;
+            }
+            runFrameRequest = requestAnimationFrame(executeCoreEngineLoop);
+        }
+
+        function parseInputCoordinate(e) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: ((cx - rect.left) / rect.width) * canvas.width, y: ((cy - rect.top) / rect.height) * canvas.height };
+        }
+
+        function onPointerStart(e) {
+            if(isEnginePaused) return;
+            pointer.isDown = true; const coords = parseInputCoordinate(e);
+            pointer.x = coords.x; pointer.y = coords.y; pointer.prevX = coords.x; pointer.prevY = coords.y;
+            if(currentActiveGameId === 'dino' && gameState.dino && gameState.dino.grounded) { gameState.dino.vy = -12.5; gameState.dino.grounded = false; }
+            if(currentActiveGameId === 'flappy' && gameState.bird) { gameState.bird.vy = -5.5; }
+        }
+
+        function onPointerMove(e) {
+            if(isEnginePaused || !pointer.isDown) return;
+            const coords = parseInputCoordinate(e);
+            pointer.prevX = pointer.x; pointer.prevY = pointer.y; pointer.x = coords.x; pointer.y = coords.y;
+        }
+
+        function onPointerEnd() { pointer.isDown = false; }
+
+        canvas.addEventListener('mousedown', onPointerStart);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerEnd);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerStart(e); }, {passive:false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive:false});
+        window.addEventListener('touchend', onPointerEnd);
+
+        function initGameSubstate(id) {
+            gameState = {};
+            if(id === 'dino') { gameState.dino = { y: 280, vy: 0, grounded: true }; gameState.hazards = []; gameState.spawnTimer = 0; }
+            else if(id === 'ninja') { gameState.targets = []; gameState.spawnTimer = 0; }
+            else if(id === 'clicker') { gameState.nodes = []; gameState.spawnTimer = 0; }
+            else if(id === 'catcher') { gameState.basketX = 160; gameState.items = []; gameState.spawnTimer = 0; }
+            else if(id === 'tetris') { gameState.grid = Array(20).fill().map(() => Array(10).fill(0)); spawnTetrisPiece(); gameState.dropTimer = 0; }
+            else if(id === 'pong') { gameState.ball = { x: 200, y: 190, vx: 3, vy: 3 }, gameState.p1Y = 140, gameState.p2Y = 140; }
+            else if(id === 'snake') { gameState.trail = [{x:10,y:10}]; gameState.dir = {x:1,y:0}; gameState.token = {x:5,y:5}; gameState.tickTimer = 0; }
+            else if(id === 'invader') { gameState.shipX = 180; gameState.fleet = []; gameState.bolts = []; gameState.spawnTimer = 0; for(let r=0; r<3; r++) { for(let c=0; c<6; c++) { gameState.fleet.push({x: 40 + c*50, y: 30 + r*30, alive: true}); } } }
+            else if(id === 'flappy') { gameState.bird = { y: 150, vy: 0 }; gameState.shafts = []; gameState.spawnTimer = 0; }
+            else if(id === 'breakout') { gameState.padX = 160; gameState.orb = { x: 200, y: 250, vx: 3, vy: -3, active: true }; gameState.bricks = []; for(let r=0; r<4; r++) { for(let c=0; c<6; c++) { gameState.bricks.push({ x: 15 + c*63, y: 40 + r*22, active: true }); } } gameState.lives = 3; document.getElementById('brick-balls-counter').innerText = `Balls Remaining: ${gameState.lives}`; }
+        }
+
+        function processGameTickAndGraphics() {
+            let speed = currentSpeedMultiplier;
+            if(emergencyHazardsActive) speed *= 0.5;
+
+            if (currentActiveGameId === 'dino') {
+                ctx.fillStyle = '#334155'; ctx.fillRect(0, 310, 400, 70);
+                let hero = gameState.dino;
+                if(!hero.grounded) { hero.vy += 0.6; hero.y += hero.vy; if(hero.y >= 280) { hero.y = 280; hero.vy = 0; hero.grounded = true; } }
+                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(40, hero.y, 30, 30);
+                gameState.spawnTimer++;
+                let rawInterval = Math.max(35, 75 - Math.floor(score/3));
+                if(gameState.spawnTimer > rawInterval) { gameState.hazards.push({ x: 400, w: 15 + Math.random()*15 }); gameState.spawnTimer = 0; }
+                gameState.hazards.forEach((hz, idx) => {
+                    hz.x -= (4 + (score * 0.05)) * speed;
+                    ctx.fillStyle = emergencyHazardsActive ? '#ef4444' : '#f43f5e';
+                    ctx.fillRect(hz.x, 285, hz.w, 25);
+                    if(hz.x < -30) { gameState.hazards.splice(idx, 1); score++; }
+                    if(!invincibilityTimerActive && hz.x < 70 && hz.x + hz.w > 40 && hero.y > 255) { triggerGameOverModal(`Collision detected! You accumulated ${score} points.`); }
+                });
+            }
+            else if(currentActiveGameId === 'ninja') {
+                gameState.spawnTimer++;
+                if(gameState.spawnTimer > 40) { gameState.targets.push({ x: 50 + Math.random()*300, y: 380, vy: -6 - Math.random()*4, sliced: false, r: 18 }); gameState.spawnTimer = 0; }
+                gameState.targets.forEach((tg, idx) => {
+                    tg.vy += 0.15; tg.y += tg.vy * speed;
+                    ctx.beginPath(); ctx.arc(tg.x, tg.y, tg.r, 0, Math.PI*2);
+                    ctx.fillStyle = tg.sliced ? 'rgba(56, 189, 248, 0.2)' : 'var(--gold-color)'; ctx.fill();
+                    if(pointer.isDown && !tg.sliced) {
+                        let dist = Math.hypot(pointer.x - tg.x, pointer.y - tg.y);
+                        if(dist < tg.r + 10) { tg.sliced = true; score += 2; }
+                    }
+                    if(tg.y > 400) { gameState.targets.splice(idx,1); if(!tg.sliced && !invincibilityTimerActive) score = Math.max(0, score - 1); }
+                });
+                if(pointer.isDown) { ctx.beginPath(); ctx.moveTo(pointer.prevX, pointer.prevY); ctx.lineTo(pointer.x, pointer.y); ctx.strokeStyle = 'var(--accent-color)'; ctx.lineWidth = 4; ctx.stroke(); }
+            }
+            else if(currentActiveGameId === 'clicker') {
+                gameState.spawnTimer++;
+                if(gameState.spawnTimer > 35) { gameState.nodes.push({ x: Math.random()*370, y: -20, r: 16, s: 1.5 + Math.random()*2 }); gameState.spawnTimer = 0; }
+                gameState.nodes.forEach((nd, idx) => {
+                    nd.y += nd.s * speed;
+                    ctx.beginPath(); ctx.arc(nd.x, nd.y, nd.r, 0, Math.PI*2);
+                    ctx.fillStyle = 'var(--purple-color)'; ctx.fill();
+                    if(pointer.isDown) {
+                        let dist = Math.hypot(pointer.x - nd.x, pointer.y - nd.y);
+                        if(dist < nd.r + 12) { gameState.nodes.splice(idx, 1); score += 5; pointer.isDown = false; return; }
+                    }
+                    if(nd.y > 390) { gameState.nodes.splice(idx,1); if(!invincibilityTimerActive) triggerGameOverModal(`An anomaly broke through the perimeter defenses! Final score: ${score}`); }
+                });
+            }
+            else if(currentActiveGameId === 'catcher') {
+                if(pointer.isDown) { gameState.basketX = pointer.x - 35; if(gameState.basketX < 0) gameState.basketX = 0; if(gameState.basketX > 330) gameState.basketX = 330; }
+                ctx.fillStyle = 'var(--success-color)'; ctx.fillRect(gameState.basketX, 340, 70, 15);
+                gameState.spawnTimer++;
+                if(gameState.spawnTimer > 45) { gameState.items.push({ x: 20 + Math.random()*360, y: -10, s: 2.5 + Math.random()*2 }); gameState.spawnTimer = 0; }
+                gameState.items.forEach((it, idx) => {
+                    it.y += it.s * speed;
+                    ctx.fillStyle = 'var(--gold-color)'; ctx.beginPath(); ctx.arc(it.x, it.y, 10, 0, Math.PI*2); ctx.fill();
+                    if(it.y > 335 && it.x > gameState.basketX && it.x < gameState.basketX + 70) { gameState.items.splice(idx, 1); score += 10; }
+                    else if(it.y > 390) { gameState.items.splice(idx, 1); if(!invincibilityTimerActive) score = Math.max(0, score - 5); }
+                });
+            }
+            else if(currentActiveGameId === 'tetris') {
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(100, 10, 200, 360);
+                gameState.dropTimer += speed;
+                if(gameState.dropTimer > 30) { moveTetrisDown(); gameState.dropTimer = 0; }
+                for(let r=0; r<20; r++) { for(let c=0; c<10; c++) { if(gameState.grid[r][c]) { ctx.fillStyle = gameState.grid[r][c]; ctx.fillRect(100 + c*20, 10 + r*18, 19, 17); } } }
+                if(gameState.current) {
+                    ctx.fillStyle = COLORS[gameState.currentType];
+                    gameState.current.forEach(b => { ctx.fillRect(100 + (gameState.curX + b.x)*20, 10 + (gameState.curY + b.y)*18, 19, 17); });
+                }
+            }
+            else if(currentActiveGameId === 'pong') {
+                let b = gameState.ball; b.x += b.vx * speed; b.y += b.vy * speed;
+                if(b.y < 10 || b.y > 370) b.vy = -b.vy;
+                if(pointer.isDown) { gameState.p1Y = pointer.y - 35; }
+                let targetAI = b.y - 35; gameState.p2Y += (targetAI - gameState.p2Y) * 0.08;
+                ctx.fillStyle = 'white'; ctx.fillRect(15, gameState.p1Y, 12, 70); ctx.fillRect(375, gameState.p2Y, 12, 70);
+                ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, Math.PI*2); ctx.fill();
+                if(b.vx < 0 && b.x < 32 && b.y > gameState.p1Y && b.y < gameState.p1Y + 70) { b.vx = -b.vx * 1.05; score += 2; }
+                if(b.vx > 0 && b.x > 368 && b.y > gameState.p2Y && b.y < gameState.p2Y + 70) { b.vx = -b.vx * 1.05; }
+                if(b.x < 0) { if(!invincibilityTimerActive) { triggerGameOverModal(`AI component defeated your perimeter paddle. Total score: ${score}`); } else { b.vx = -b.vx; b.x = 10; } }
+                if(b.x > 400) { score += 10; b.x = 200; b.y = 190; b.vx = -3; }
+            }
+            else if(currentActiveGameId === 'snake') {
+                gameState.tickTimer += speed;
+                if(gameState.tickTimer > 12) {
+                    gameState.tickTimer = 0;
+                    let head = { x: gameState.trail[0].x + gameState.dir.x, y: gameState.trail[0].y + gameState.dir.y };
+                    if(pointer.isDown) {
+                        let dx = pointer.x - (head.x*20); let dy = pointer.y - (head.y*19);
+                        if(Math.abs(dx) > Math.abs(dy)) { gameState.dir = { x: dx > 0 ? 1 : -1, y: 0 }; }
+                        else { gameState.dir = { x: 0, y: dy > 0 ? 1 : -1 }; }
+                    }
+                    gameState.trail.unshift(head);
+                    if(head.x === gameState.token.x && head.y === gameState.token.y) { score += 15; gameState.token = { x: Math.floor(Math.random()*19), y: Math.floor(Math.random()*19) }; }
+                    else { gameState.trail.pop(); }
+                    if(head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) { if(!invincibilityTimerActive) triggerGameOverModal(`Impacted perimeter walls! Final score: ${score}`); else { head.x = (head.x + 20) % 20; head.y = (head.y + 20) % 20; } }
+                }
+                ctx.fillStyle = 'var(--success-color)'; gameState.trail.forEach(pt => ctx.fillRect(pt.x*20, pt.y*19, 18, 17));
+                ctx.fillStyle = 'var(--error-color)'; ctx.fillRect(gameState.token.x*20, gameState.token.y*19, 18, 17);
+            }
+            else if(currentActiveGameId === 'invader') {
+                if(pointer.isDown) { gameState.shipX = pointer.x - 20; }
+                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(gameState.shipX, 340, 40, 15);
+                gameState.spawnTimer++;
+                if(gameState.spawnTimer > 25) { gameState.bolts.push({x: gameState.shipX + 20, y: 330}); gameState.spawnTimer = 0; }
+                let anyAlive = false;
+                gameState.fleet.forEach(inv => {
+                    if(!inv.alive) return; anyAlive = true;
+                    ctx.fillStyle = 'white'; ctx.fillRect(inv.x, inv.y, 25, 18);
+                    if(Math.random() > 0.994 * (1/speed) && !isEnginePaused) { gameState.bolts.push({x: inv.x + 12, y: inv.y + 20, enemy: true}); }
+                    if(inv.y > 320 && !invincibilityTimerActive) { triggerGameOverModal("Invaders breached defensive frontlines!"); }
+                });
+                if(!anyAlive) { for(let r=0; r<3; r++) { for(let c=0; c<6; c++) { gameState.fleet.push({x: 40 + c*50, y: 30 + r*30, alive: true}); } } score += 50; }
+                gameState.bolts.forEach((bl, bIdx) => {
+                    bl.y += bl.enemy ? 3.5 * speed : -5 * speed;
+                    ctx.fillStyle = bl.enemy ? 'var(--error-color)' : 'var(--success-color)'; ctx.fillRect(bl.x, bl.y, 4, 10);
+                    if(!bl.enemy) {
+                        gameState.fleet.forEach(inv => {
+                            if(inv.alive && bl.x > inv.x && bl.x < inv.x + 25 && bl.y > inv.y && bl.y < inv.y + 18) { inv.alive = false; gameState.bolts.splice(bIdx,1); score += 10; }
+                        });
+                    } else {
+                        if(!invincibilityTimerActive && bl.x > gameState.shipX && bl.x < gameState.shipX + 40 && bl.y > 340 && bl.y < 355) { triggerGameOverModal(`Perimeter shield critically breached! Total score: ${score}`); }
+                    }
+                    if(bl.y < 0 || bl.y > 380) gameState.bolts.splice(bIdx, 1);
+                });
+            }
+            else if(currentActiveGameId === 'flappy') {
+                let b = gameState.bird; b.vy += 0.28; b.y += b.vy * speed;
+                ctx.fillStyle = 'var(--gold-color)'; ctx.fillRect(60, b.y, 24, 24);
+                if((b.y > 360 || b.y < 0) && !invincibilityTimerActive) { triggerGameOverModal(`Gravitational collision. Total score: ${score}`); }
+                gameState.spawnTimer++;
+                if(gameState.spawnTimer > 85) { let gap = 110; let topH = 40 + Math.random()*160; gameState.shafts.push({x:400, top:topH, bot:topH+gap, passed:false}); gameState.spawnTimer = 0; }
+                gameState.shafts.forEach((sh, idx) => {
+                    sh.x -= 2.2 * speed;
+                    ctx.fillStyle = '#1e293b'; ctx.fillRect(sh.x, 0, 50, sh.top); ctx.fillRect(sh.x, sh.bot, 50, 380 - sh.bot);
+                    if(!sh.passed && sh.x < 60) { sh.passed = true; score += 5; }
+                    if(!invincibilityTimerActive && sh.x < 84 && sh.x + 50 > 60 && (b.y < sh.top || b.y + 24 > sh.bot)) { triggerGameOverModal(`Impact inside matrix caverns! Final score: ${score}`); }
+                    if(sh.x < -60) gameState.shafts.splice(idx, 1);
+                });
+            }
+            else if(currentActiveGameId === 'breakout') {
+                let pad = gameState.padX; let ball = gameState.orb;
+                if(pointer.isDown) { gameState.padX = pointer.x - 40; if(gameState.padX < 0) gameState.padX = 0; if(gameState.padX > 320) gameState.padX = 320; }
+                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(gameState.padX, 340, 80, 12);
+                if(ball.active) {
+                    ball.x += ball.vx * speed; ball.y += ball.vy * speed;
+                    if(ball.x < 8 || ball.x > 392) ball.vx = -ball.vx;
+                    if(ball.y < 8) ball.vy = -ball.vy;
+                    if(ball.vy > 0 && ball.y > 332 && ball.y < 342 && ball.x > gameState.padX && ball.x < gameState.padX + 80) { ball.vy = -ball.vy; }
+                    let activeBricks = 0;
+                    gameState.bricks.forEach(bk => {
+                        if(!bk.active) return; activeBricks++;
+                        ctx.fillStyle = 'var(--purple-color)'; ctx.fillRect(bk.x, bk.y, 55, 16);
+                        if(ball.x > bk.x && ball.x < bk.x + 55 && ball.y > bk.y && ball.y < bk.y + 16) { bk.active = false; ball.vy = -ball.vy; score += 10; }
+                    });
+                    if(activeBricks === 0) { score += 100; for(let r=0; r<4; r++) { for(let c=0; c<6; c++) { gameState.bricks.push({ x: 15 + c*63, y: 40 + r*22, active: true }); } } }
+                    if(ball.y > 380) {
+                        if (!invincibilityTimerActive) {
+                            gameState.lives--;
+                            document.getElementById('brick-balls-counter').innerText = `Balls Remaining: ${gameState.lives}`;
+                            if(gameState.lives <= 0) { triggerGameOverModal(`All active structural nodes depleted! Final score: ${score}`); }
+                            else { ball.x = 200; ball.y = 250; ball.vx = 3; ball.vy = -3; }
+                        } else { ball.vy = -ball.vy; ball.y = 370; }
+                    }
+                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 7, 0, Math.PI*2); ctx.fill();
+                }
+            }
+        }
+
+        function spawnTetrisPiece() {
+            let rIdx = Math.floor(Math.random() * SHAPES.length);
+            gameState.currentType = rIdx;
+            gameState.current = [];
+            SHAPES[rIdx].forEach((row, r) => { row.forEach((val, c) => { if(val) gameState.current.push({x: c, y: r}); }); });
+            gameState.curX = 4; gameState.curY = 0;
+            if(checkTetrisCollision(0, 0)) { triggerGameOverModal("Matrix overflow encountered. Tetris runtime closed."); }
+        }
+
+        function checkTetrisCollision(nx, ny, spec) {
+            let piece = spec || gameState.current;
+            for(let i=0; i<piece.length; i++) {
+                let bx = gameState.curX + piece[i].x + nx;
+                let by = gameState.curY + piece[i].y + ny;
+                if(bx < 0 || bx >= 10 || by >= 20) return true;
+                if(by >= 0 && gameState.grid[by][bx]) return true;
+            }
+            return false;
+        }
+
+        function lockTetrisPiece() {
+            gameState.current.forEach(b => {
+                let by = gameState.curY + b.y; let bx = gameState.curX + b.x;
+                if(by >= 0) gameState.grid[by][bx] = COLORS[gameState.currentType];
+            });
+            for(let r=19; r>=0; r--) {
+                if(gameState.grid[r].every(v => v !== 0)) { gameState.grid.splice(r, 1); gameState.grid.unshift(Array(10).fill(0)); score += 25; r++; }
+            }
+            spawnTetrisPiece();
+        }
+
+        function moveTetrisDown() { if(!checkTetrisCollision(0, 1)) { gameState.curY++; } else { lockTetrisPiece(); } }
+        document.getElementById('t-left').addEventListener('click', () => { if(!checkTetrisCollision(-1, 0)) gameState.curX--; });
+        document.getElementById('t-right').addEventListener('click', () => { if(!checkTetrisCollision(1, 0)) gameState.curX++; });
+        document.getElementById('t-down').addEventListener('click', () => { moveTetrisDown(); });
+        document.getElementById('t-rot').addEventListener('click', () => {
+            let rotated = gameState.current.map(b => ({ x: -b.y, y: b.x }));
+            let minX = Math.min(...rotated.map(b=>b.x)), minY = Math.min(...rotated.map(b=>b.y));
+            rotated = rotated.map(b => ({ x: b.x - minX, y: b.y - minY }));
+            if(!checkTetrisCollision(0, 0, rotated)) gameState.current = rotated;
+        });
+    </script>
+</body>
+</html>
