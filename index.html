@@ -737,7 +737,10 @@
       background: #091827;
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      touch-action: manipulation;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .game-shell.tall canvas {
@@ -1157,14 +1160,14 @@
   <div id="modal" class="modal" role="dialog" aria-modal="true">
     <div class="modal-card">
       <div class="modal-head">
-        <h2 id="modalTitle">Settings</h2>
+        <h2 id="modalTitle">Code</h2>
         <button id="closeModalBtn" class="small-icon" title="Close">Close</button>
       </div>
       <div id="modalBody" class="modal-body"></div>
     </div>
   </div>
 
-  <div id="toast" class="toast">Logged out. Progress saved.</div>
+  <div id="toast" class="toast show">Code selected.</div>
 
   <script>
     const STORAGE_KEY = "jeremyLearningProgram.v1";
@@ -1921,6 +1924,7 @@
       let running = true;
       let score = 0;
       const keys = {};
+      const cleanup = [];
       const setScore = (value, label = "Score") => {
         score = Math.max(0, Math.floor(value));
         info.dataset.score = score;
@@ -1934,11 +1938,55 @@
       const keyUp = (event) => { keys[event.key] = false; };
       window.addEventListener("keydown", keyDown);
       window.addEventListener("keyup", keyUp);
+      const touchPoint = (event) => {
+        const touch = event.touches?.[0] || event.changedTouches?.[0];
+        if (!touch) return null;
+        return {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          pointerId: touch.identifier,
+          preventDefault: () => event.preventDefault()
+        };
+      };
+      const touchStart = (event) => {
+        const point = touchPoint(event);
+        if (point && canvas.onpointerdown) {
+          event.preventDefault();
+          canvas.onpointerdown(point);
+        }
+      };
+      const touchMove = (event) => {
+        const point = touchPoint(event);
+        if (point && canvas.onpointermove) {
+          event.preventDefault();
+          canvas.onpointermove(point);
+        }
+      };
+      const touchEnd = (event) => {
+        const point = touchPoint(event);
+        if (point && canvas.onpointerup) {
+          event.preventDefault();
+          canvas.onpointerup(point);
+        }
+      };
+      if (!window.PointerEvent) {
+        canvas.addEventListener("touchstart", touchStart, { passive: false });
+        canvas.addEventListener("touchmove", touchMove, { passive: false });
+        canvas.addEventListener("touchend", touchEnd, { passive: false });
+        canvas.addEventListener("touchcancel", touchEnd, { passive: false });
+        cleanup.push(() => {
+          canvas.removeEventListener("touchstart", touchStart);
+          canvas.removeEventListener("touchmove", touchMove);
+          canvas.removeEventListener("touchend", touchEnd);
+          canvas.removeEventListener("touchcancel", touchEnd);
+        });
+      }
       const stop = () => {
         running = false;
         cancelAnimationFrame(raf);
         window.removeEventListener("keydown", keyDown);
         window.removeEventListener("keyup", keyUp);
+        cleanup.forEach((fn) => fn());
         canvas.onclick = null;
         canvas.onpointerdown = null;
         canvas.onpointermove = null;
@@ -2047,11 +2095,17 @@
       let frames = 0;
       let missed = 0;
       let slicing = false;
+      let lastSlicePoint = null;
+      let trails = [];
       kit.setScore(0);
       const sliceAt = (event) => {
         const rect = canvas.getBoundingClientRect();
         const x = (event.clientX - rect.left) * (canvas.width / rect.width);
         const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+        if (lastSlicePoint) {
+          trails.push({ x1: lastSlicePoint.x, y1: lastSlicePoint.y, x2: x, y2: y, born: performance.now() });
+        }
+        lastSlicePoint = { x, y };
         fruits = fruits.filter((fruit) => {
           if (Math.hypot(x - fruit.x, y - fruit.y) <= fruit.r + 8) {
             kit.setScore(Number(info.dataset.score || 0) + 6);
@@ -2062,14 +2116,23 @@
       };
       canvas.onpointerdown = (event) => {
         slicing = true;
-        canvas.setPointerCapture?.(event.pointerId);
+        if (event.pointerId !== undefined && canvas.setPointerCapture) {
+          try { canvas.setPointerCapture(event.pointerId); } catch {}
+        }
+        lastSlicePoint = null;
         sliceAt(event);
       };
       canvas.onpointermove = (event) => {
         if (slicing) sliceAt(event);
       };
-      canvas.onpointerup = () => { slicing = false; };
-      canvas.onpointerleave = () => { slicing = false; };
+      canvas.onpointerup = () => {
+        slicing = false;
+        lastSlicePoint = null;
+      };
+      canvas.onpointerleave = () => {
+        slicing = false;
+        lastSlicePoint = null;
+      };
       kit.loop(() => {
         frames++;
         if (frames % 42 === 0) fruits.push({ x: 40 + Math.random() * 640, y: 430, vx: -2 + Math.random() * 4, vy: -10 - Math.random() * 4, r: 18 + Math.random() * 10, color: ["#d94d4d", "#d89f2b", "#2b9a66"][Math.floor(Math.random() * 3)] });
@@ -2083,6 +2146,20 @@
           kit.ctx.arc(fruit.x, fruit.y, fruit.r, 0, Math.PI * 2);
           kit.ctx.fill();
         }
+        trails = trails.filter((trail) => performance.now() - trail.born < 220);
+        trails.forEach((trail) => {
+          const age = (performance.now() - trail.born) / 220;
+          kit.ctx.strokeStyle = `rgba(255, 255, 255, ${1 - age})`;
+          kit.ctx.lineWidth = 8 * (1 - age) + 2;
+          kit.ctx.lineCap = "round";
+          kit.ctx.beginPath();
+          kit.ctx.moveTo(trail.x1, trail.y1);
+          kit.ctx.lineTo(trail.x2, trail.y2);
+          kit.ctx.stroke();
+          kit.ctx.strokeStyle = `rgba(215, 180, 122, ${(1 - age) * 0.8})`;
+          kit.ctx.lineWidth = 3;
+          kit.ctx.stroke();
+        });
         const before = fruits.length;
         fruits = fruits.filter((fruit) => fruit.y < 470);
         missed += before - fruits.length;
@@ -2446,6 +2523,8 @@
       let selected = null;
       let lastMove = null;
       let lastMoveAt = 0;
+      let playerTurn = playerIsWhite;
+      let botTimer = 0;
       let board = [
         ["r","n","b","q","k","b","n","r"],
         ["p","p","p","p","p","p","p","p"],
@@ -2498,6 +2577,7 @@
         return moves;
       }
       function botMove() {
+        playerTurn = false;
         const moves = [];
         board.forEach((row, y) => row.forEach((p, x) => {
           if (p && pieceIsWhite(p) === botIsWhite) movesFor(x, y, botIsWhite).forEach(([nx, ny]) => moves.push({ x, y, nx, ny, gain: values[(board[ny][nx] || "").toLowerCase()] || 0 }));
@@ -2510,6 +2590,7 @@
         board[move.y][move.x] = "";
         lastMove = { fromX: move.x, fromY: move.y, toX: move.nx, toY: move.ny };
         lastMoveAt = performance.now();
+        playerTurn = true;
       }
       function drawPiece(ctx, piece, cx, cy, pulse) {
         const white = pieceIsWhite(piece);
@@ -2620,12 +2701,20 @@
         ctx.restore();
       }
       canvas.onpointerdown = (event) => {
+        if (!playerTurn) {
+          toast("Wait for the bot move.");
+          return;
+        }
         const rect = canvas.getBoundingClientRect();
         const x = Math.floor(((event.clientX - rect.left) * (canvas.width / rect.width) - ox) / size);
         const y = Math.floor(((event.clientY - rect.top) * (canvas.height / rect.height) - oy) / size);
         if (x < 0 || x > 7 || y < 0 || y > 7) return;
         const p = board[y][x];
         if (selected) {
+          if (p && pieceIsWhite(p) === playerIsWhite) {
+            selected = { x, y };
+            return;
+          }
           const legal = movesFor(selected.x, selected.y, playerIsWhite).some(([mx, my]) => mx === x && my === y);
           if (legal) {
             const captured = board[y][x];
@@ -2636,11 +2725,12 @@
             lastMoveAt = performance.now();
             kit.setScore(Number(info.dataset.score || 0) + (values[(captured || "").toLowerCase()] || 1) * 6);
             selected = null;
-            setTimeout(botMove, 240);
+            playerTurn = false;
+            botTimer = setTimeout(botMove, 360);
           } else selected = null;
         } else if (p && pieceIsWhite(p) === playerIsWhite) selected = { x, y };
       };
-      if (!playerIsWhite) setTimeout(botMove, 420);
+      if (!playerIsWhite) botTimer = setTimeout(botMove, 520);
       kit.loop(() => {
         const legalSquares = selected ? movesFor(selected.x, selected.y, playerIsWhite).map(([x, y]) => `${x},${y}`) : [];
         kit.clear("#070a0f");
@@ -2682,9 +2772,12 @@
         kit.ctx.fillText(`You are ${playerColor}. Bot is ${playerIsWhite ? "black" : "white"}.`, 22, 32);
         kit.ctx.font = "700 14px sans-serif";
         kit.ctx.fillStyle = "rgba(255,255,255,0.72)";
-        kit.ctx.fillText("Tap a black piece, then tap a legal square.", 22, 52);
+        kit.ctx.fillText(playerTurn ? `Tap a ${playerColor} piece, then tap a legal square.` : "Bot is thinking...", 22, 52);
       });
-      return kit.stop;
+      return () => {
+        clearTimeout(botTimer);
+        kit.stop();
+      };
     }
 
     function bindEvents() {
@@ -2714,7 +2807,9 @@
     ensureAdmin();
     bindEvents();
     applyTheme(state.guestTheme || "black");
-    if (state.currentUserId && getCurrentUser()?.active) enterApp();
+    state.currentUserId = null;
+    saveState("");
+    showScreen("welcomeScreen");
   </script>
 
 
