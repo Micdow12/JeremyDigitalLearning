@@ -1,1410 +1,2721 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeremy's Economy Arcade Console</title>
-    <style>
-        :root {
-            --bg-color: #0b0f19;
-            --panel-color: #1e293b;
-            --accent-color: #38bdf8;
-            --accent-hover: #0ea5e9;
-            --text-color: #f8fafc;
-            --success-color: #22c55e;
-            --gold-color: #f59e0b;
-            --error-color: #ef4444;
-            --purple-color: #a855f7;
-        }
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jeremy's Learning Program</title>
+  <style>
+    :root {
+      --navy: #071832;
+      --navy-2: #102847;
+      --ink: #101722;
+      --panel: #f7f8fb;
+      --paper: #ffffff;
+      --muted: #687488;
+      --line: rgba(16, 23, 34, 0.12);
+      --blue: #1f7ae0;
+      --blue-dark: #0f55a7;
+      --tan: #d7b47a;
+      --green: #2b9a66;
+      --red: #c54848;
+      --gold: #d89f2b;
+      --shadow: 0 18px 45px rgba(7, 24, 50, 0.16);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        .bg-watermark {
-            position: fixed;
-            font-size: 9vw;
-            font-weight: 900;
-            color: rgba(56, 189, 248, 0.02);
-            z-index: -1;
-            user-select: none;
-            pointer-events: none;
-            text-transform: uppercase;
-            animation: pulseText 6s infinite ease-in-out;
-        }
-        #wm-left { top: 15%; left: -2%; transform: rotate(-10deg); }
-        #wm-right { bottom: 15%; right: -2%; transform: rotate(10deg); animation-delay: 3s; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #e9eef7;
+      color: var(--ink);
+      overflow-x: hidden;
+    }
 
-        @keyframes pulseText {
-            0% { opacity: 0.3; transform: scale(1) rotate(-10deg); }
-            50% { opacity: 0.6; transform: scale(1.05) rotate(-8deg); }
-            100% { opacity: 0.3; transform: scale(1) rotate(-10deg); }
-        }
+    body.theme-black {
+      --ink: #f4f7fb;
+      --panel: #111827;
+      --paper: #101722;
+      --muted: #a8b4c7;
+      --line: rgba(255, 255, 255, 0.15);
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.34);
+      background: #07111f;
+    }
 
-        .screen {
-            display: none;
-            width: 100%;
-            max-width: 500px;
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-            margin: 40px 20px;
-            box-sizing: border-box;
-            border: 1px solid rgba(255,255,255,0.08);
-            backdrop-filter: blur(8px);
-            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+    body.theme-white {
+      --ink: #101722;
+      --panel: #f7f8fb;
+      --paper: #ffffff;
+      --muted: #687488;
+      --line: rgba(16, 23, 34, 0.12);
+      background: #e9eef7;
+    }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
 
-        #splash-screen { display: block; }
+    button {
+      border: 0;
+      cursor: pointer;
+    }
 
-        h1, h2, h3 {
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            text-align: center;
-            text-transform: uppercase;
-        }
+    .screen {
+      display: none;
+      min-height: 100vh;
+      animation: screenIn 520ms cubic-bezier(.16, 1, .3, 1) both;
+    }
 
-        .error-message-text {
-            color: var(--error-color);
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--error-color);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            text-align: center;
-            display: none;
-        }
+    .screen.active {
+      display: block;
+    }
 
-        input, select {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0 20px 0;
-            border-radius: 12px;
-            border: 2px solid #334155;
-            background: #0f172a;
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
+    @keyframes screenIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.985);
+        filter: blur(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
-        }
+    @keyframes popOpen {
+      from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.94);
+      }
+      65% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.01);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
 
-        button {
-            background: var(--accent-color);
-            color: #0f172a;
-            border: none;
-            padding: 14px 28px;
-            font-size: 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 700;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
-        }
+    @keyframes cardRise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        button:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
-        }
+    .welcome {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      color: white;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(215, 180, 122, 0.18), transparent 28%),
+        radial-gradient(circle at 85% 75%, rgba(31, 122, 224, 0.22), transparent 33%),
+        linear-gradient(145deg, #041226, var(--navy) 55%, #0d2548);
+    }
 
-        .header-widget {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0f172a;
-            padding: 16px;
-            border-radius: 14px;
-            margin-bottom: 20px;
-            font-weight: 700;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+    .welcome-inner {
+      width: min(900px, 100%);
+      text-align: center;
+      padding: 48px 24px;
+    }
 
-        .credit-count { color: var(--gold-color); display: flex; align-items: center; gap: 6px; }
-        .menu-grid { display: flex; flex-direction: column; gap: 14px; }
+    .welcome h1 {
+      margin: 0;
+      font-size: clamp(2.7rem, 8vw, 6.4rem);
+      line-height: 0.95;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-wrap: balance;
+      text-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+    }
 
-        .nav-btn {
-            background: #1e293b;
-            border: 2px solid #334155;
-            padding: 18px;
-            border-radius: 14px;
-            font-size: 18px;
-            color: white;
-            font-weight: 700;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            box-sizing: border-box;
-            cursor: pointer;
-        }
+    .welcome p {
+      width: min(680px, 100%);
+      margin: 22px auto 32px;
+      font-size: clamp(1rem, 2.3vw, 1.25rem);
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.82);
+    }
 
-        .nav-btn:hover {
-            background: #273549;
-            border-color: #475569;
-            transform: translateX(4px);
-        }
+    .start-button {
+      min-width: 172px;
+      min-height: 54px;
+      border-radius: 8px;
+      color: #091b31;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--tan), #8fc4ff);
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    }
 
-        .catalog-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 280px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-        }
+    .start-button:hover {
+      transform: translateY(-3px) scale(1.02);
+      filter: brightness(1.03);
+      box-shadow: 0 24px 46px rgba(0, 0, 0, 0.34);
+    }
 
-        .game-item {
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 14px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .auth-wrap {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        linear-gradient(120deg, rgba(7, 24, 50, 0.94), rgba(16, 40, 71, 0.88)),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 18px);
+    }
 
-        .game-details h4 { margin: 0 0 4px 0; color: #fff; font-size: 16px; }
-        .game-details p { margin: 0; font-size: 13px; color: #94a3b8; }
-        .highscore-tag { font-size: 12px; color: var(--gold-color); margin-top: 4px; font-weight: 600; }
-        
-        .action-btn { padding: 10px 18px; font-size: 14px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; color: white; }
-        .action-btn.play { background: var(--success-color); }
-        .action-btn.lock { background: #475569; color: #cbd5e1; }
-        .action-btn.delete { background: var(--error-color); }
-        
-        .action-btn.lock.affordable-btn { 
-            background: var(--success-color) !important; 
-            animation: pulseGlow 1.5s infinite ease-in-out;
-        }
+    .auth-grid,
+    .auth-choice {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
 
-        @keyframes pulseGlow {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.04); }
-            100% { transform: scale(1); }
-        }
+    .auth-choice {
+      width: min(640px, 100%);
+    }
 
-        #study-box-display { font-size: 22px; font-weight: 800; margin-bottom: 20px; padding: 20px; border-radius: 12px; text-align: center; color: #fff; background: #0f172a; border: 1px solid rgba(255,255,255,0.05); }
-        #canvas-viewport { position: relative; background: #070a12; padding: 8px; border-radius: 16px; border: 2px solid #334155; }
-        canvas { background: #020408; display: block; margin: 0 auto; width: 100%; height: auto; aspect-ratio: 4 / 3; touch-action: none; border-radius: 8px; }
-        
-        .hud-row { display: flex; justify-content: space-between; background: #0f172a; padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; font-weight: 700; }
-        #tetris-controls { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 260px; margin: 12px auto; }
-        .game-foot-row { display: flex; justify-content: space-between; margin-top: 14px; gap: 10px; }
-        
-        #toast-banner { display: none; position: fixed; top: 20px; background: #ef4444; color: white; padding: 14px 28px; border-radius: 12px; font-weight: 700; z-index: 1000; text-align: center; box-shadow: 0 10px 25px rgba(239,68,68,0.4); }
-        
-        .modal-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 15, 25, 0.9);
-            border-radius: 16px;
-            z-index: 50;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
+    .auth-card,
+    .panel,
+    .modal-card,
+    .game-tile,
+    .lesson-card {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+    }
 
-        .modal-card {
-            background: #1e293b;
-            border: 2px solid var(--purple-color);
-            border-radius: 16px;
-            padding: 20px;
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
-        }
+    body.theme-black .auth-card,
+    body.theme-black .panel,
+    body.theme-black .modal-card,
+    body.theme-black .game-tile,
+    body.theme-black .lesson-card {
+      background: rgba(16, 23, 34, 0.96);
+    }
 
-        .modal-options { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; width: 100%; }
-        .modal-opt-btn { background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-        .modal-opt-btn:hover { background: #334155; border-color: var(--purple-color); }
+    .auth-card {
+      padding: 28px;
+      transform: translateY(0);
+      animation: cardRise 440ms cubic-bezier(.16, 1, .3, 1) both;
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
 
-        .board-container {
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #334155;
-        }
-        .board-title {
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--accent-color);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            border-bottom: 1px dashed #334155;
-            padding-bottom: 4px;
-        }
-        .board-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.02);
-        }
-        .terminal-log {
-            background: #020408;
-            font-family: monospace;
-            font-size: 11px;
-            color: #4ade80;
-            padding: 10px;
-            border-radius: 8px;
-            height: 110px;
-            overflow-y: auto;
-            text-align: left;
-            border: 1px solid #1e293b;
-        }
-    </style>
+    .auth-grid .auth-card:not(.hidden) {
+      grid-column: 1 / -1;
+      width: min(520px, 100%);
+      margin: 0 auto;
+    }
+
+    .auth-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 52px rgba(7, 24, 50, 0.22);
+    }
+
+    .auth-card h2,
+    .panel h2,
+    .modal-card h2 {
+      margin: 0 0 18px;
+      font-size: 1.7rem;
+      letter-spacing: 0;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-weight: 800;
+      color: #22314a;
+    }
+
+    body.theme-black .field label,
+    body.theme-black .field span,
+    body.theme-black .auth-card h2,
+    body.theme-black .panel h2,
+    body.theme-black .modal-card h2,
+    body.theme-black .lesson-card h3,
+    body.theme-black .game-tile h3 {
+      color: var(--ink);
+    }
+
+    .field input,
+    .field select {
+      min-height: 46px;
+      border: 1px solid rgba(16, 23, 34, 0.18);
+      border-radius: 8px;
+      padding: 0 13px;
+      background: white;
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    body.theme-black .field input,
+    body.theme-black .field select {
+      color: #f4f7fb;
+      background: #0b1324;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(31, 122, 224, 0.13);
+    }
+
+    .primary,
+    .secondary,
+    .danger,
+    .ghost,
+    .small-icon {
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 800;
+      transition: transform 160ms ease, filter 160ms ease, background 160ms ease;
+    }
+
+    .primary {
+      color: white;
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    }
+
+    .secondary {
+      color: #132033;
+      background: #e7edf6;
+    }
+
+    body.theme-black .secondary,
+    body.theme-black .small-icon,
+    body.theme-black .ghost {
+      color: #f4f7fb;
+      background: #17243a;
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .admin-only {
+      display: none;
+    }
+
+    .admin .admin-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .danger {
+      color: white;
+      background: var(--red);
+    }
+
+    .ghost {
+      color: #173052;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .small-icon {
+      min-width: 42px;
+      padding: 0 11px;
+      color: #132033;
+      background: white;
+      border: 1px solid var(--line);
+    }
+
+    .primary:hover,
+    .secondary:hover,
+    .danger:hover,
+    .ghost:hover,
+    .small-icon:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.03);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background:
+        linear-gradient(180deg, #f4f7fb, #e6edf7 55%, #eef2f8);
+    }
+
+    body.theme-black .app {
+      background: linear-gradient(180deg, #07111f, #0d1728 55%, #101722);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px clamp(14px, 3vw, 28px);
+      background: rgba(247, 248, 251, 0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    body.theme-black .topbar {
+      background: rgba(7, 17, 31, 0.88);
+    }
+
+    .brand {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+      margin-right: auto;
+    }
+
+    .brand strong {
+      font-size: 1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .credit-pill {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 13px;
+      border-radius: 8px;
+      color: #122034;
+      background: #fff7e7;
+      border: 1px solid rgba(216, 159, 43, 0.34);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .admin-tools {
+      display: none;
+      gap: 8px;
+    }
+
+    .admin .admin-tools {
+      display: flex;
+    }
+
+    .content {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 86px;
+    }
+
+    .home-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .home-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .big-action {
+      min-height: 170px;
+      border-radius: 8px;
+      color: white;
+      overflow: hidden;
+      position: relative;
+      text-align: left;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: linear-gradient(135deg, #1f7ae0, #163f80);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+      animation: cardRise 520ms cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .big-action.learn {
+      background: linear-gradient(135deg, #2b9a66, #17664f);
+    }
+
+    .big-action::before {
+      content: "";
+      position: absolute;
+      inset: 12px 12px auto auto;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 16px solid rgba(255, 255, 255, 0.18);
+      z-index: -1;
+      animation: floaty 3.6s ease-in-out infinite;
+    }
+
+    @keyframes floaty {
+      50% {
+        transform: translateY(10px) rotate(10deg);
+      }
+    }
+
+    .big-action strong {
+      font-size: clamp(1.6rem, 4vw, 2.35rem);
+      letter-spacing: 0;
+    }
+
+    .big-action span,
+    .muted {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .big-action span {
+      color: rgba(255, 255, 255, 0.78);
+      margin-top: 8px;
+    }
+
+    .stats {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stat-row:last-child {
+      border-bottom: 0;
+    }
+
+    .stat-row b {
+      text-align: right;
+    }
+
+    .view-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .view-head h2 {
+      margin: 0;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+    }
+
+    .view-head .secondary {
+      margin-left: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .game-tile {
+      min-height: 220px;
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      animation: cardRise 460ms cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .game-tile:nth-child(2n),
+    .lesson-card:nth-child(2n) {
+      animation-delay: 45ms;
+    }
+
+    .game-tile:nth-child(3n),
+    .lesson-card:nth-child(3n) {
+      animation-delay: 90ms;
+    }
+
+    .game-tile::after {
+      content: "";
+      position: absolute;
+      right: -34px;
+      top: -34px;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: rgba(31, 122, 224, 0.11);
+    }
+
+    .game-tile h3,
+    .lesson-card h3 {
+      margin: 0;
+      font-size: 1.18rem;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: #eef3fb;
+      color: #23405f;
+      font-size: 0.8rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag.locked {
+      background: #f8ebeb;
+      color: #8c3030;
+    }
+
+    .tile-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .lesson-card {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      animation: cardRise 460ms cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .logout {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 15;
+      box-shadow: var(--shadow);
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 30;
+      max-width: min(420px, calc(100vw - 36px));
+      padding: 13px 15px;
+      border-radius: 8px;
+      color: white;
+      background: rgba(16, 23, 34, 0.94);
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 25;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(7, 24, 50, 0.56);
+    }
+
+    .modal.active {
+      display: grid;
+      animation: screenIn 240ms ease both;
+    }
+
+    .modal-card {
+      width: min(760px, 100%);
+      max-height: min(88vh, 840px);
+      display: grid;
+      overflow: hidden;
+      background: var(--paper);
+      animation: popOpen 360ms cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .modal-head button {
+      margin-left: auto;
+    }
+
+    .modal-body {
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .settings-grid,
+    .admin-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    body.theme-black .admin-section,
+    body.theme-black .list-row {
+      background: #0b1324;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .list-row span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 100%;
+      min-height: 300px;
+      background: #091827;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      touch-action: manipulation;
+    }
+
+    .game-shell.tall canvas {
+      min-height: 520px;
+    }
+
+    .game-shell {
+      display: grid;
+      gap: 12px;
+    }
+
+    .game-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .game-meta .tag {
+      background: #fff7e7;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .quiz {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quiz-question {
+      padding: 16px;
+      border-radius: 8px;
+      background: #eef3fb;
+      font-weight: 900;
+      font-size: 1.08rem;
+    }
+
+    .quiz-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .quiz-options button {
+      min-height: 48px;
+      border-radius: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      font-weight: 800;
+    }
+
+    .code-viewer {
+      width: 100%;
+      min-height: 56vh;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      color: #f4f7fb;
+      background: #07111f;
+      font: 0.86rem/1.45 Consolas, "Courier New", monospace;
+      white-space: pre;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 820px) {
+      .auth-grid,
+      .auth-choice,
+      .home-hero,
+      .home-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        width: 100%;
+      }
+
+      .admin-tools {
+        order: 5;
+        width: 100%;
+      }
+
+      .admin .admin-tools {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .admin-tools button {
+        padding: 0 8px;
+        font-size: 0.85rem;
+      }
+
+      .quiz-options {
+        grid-template-columns: 1fr;
+      }
+
+      .logout {
+        left: 14px;
+        bottom: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
 </head>
-<body>
+<body class="theme-black">
+  <main id="welcomeScreen" class="screen">
+    <section class="welcome">
+      <div class="welcome-inner">
+        <h1>Jeremy's Learning Program</h1>
+        <p>Welcome to Jeremy's Learning program press start to continue</p>
+        <button id="startBtn" class="start-button">Start</button>
+      </div>
+    </section>
+  </main>
 
-    <div class="bg-watermark" id="wm-left">Arcade Arena</div>
-    <div class="bg-watermark" id="wm-right">No Popups</div>
+  <main id="authScreen" class="screen">
+    <section class="auth-wrap">
+      <div id="authChoice" class="auth-choice hidden">
+        <button id="chooseLoginBtn" class="big-action">
+          <strong>Login</strong>
+          <span>Continue with an account you already made.</span>
+        </button>
+        <button id="chooseSignupBtn" class="big-action learn">
+          <strong>Sign up</strong>
+          <span>Create a new account and start earning credits.</span>
+        </button>
+      </div>
 
-    <div id="toast-banner">Notification</div>
+      <div id="authForms" class="auth-grid">
+        <form id="signupForm" class="auth-card hidden">
+          <h2>Sign up</h2>
+          <label class="field">
+            <span>Name: Please enter your name!</span>
+            <input id="signupName" autocomplete="username" required="" maxlength="32">
+          </label>
+          <label class="field">
+            <span>Password: Please create a strong password!</span>
+            <input id="signupPassword" type="password" autocomplete="new-password" required="" minlength="4" maxlength="64">
+          </label>
+          <button class="primary" type="submit">Sign up!</button>
+          <button class="secondary" type="button" data-auth-choice="">Back</button>
+        </form>
 
-    <div id="splash-screen" class="screen" style="text-align: center;">
-        <h1 style="color: var(--accent-color); font-size: 32px; margin-bottom: 10px;">Jeremy's Arcade</h1>
-        <p style="color: #94a3b8; margin-bottom: 40px; font-size: 16px;">Step into the ultimate mathematical gaming experience.</p>
-        <button id="splash-continue-btn" style="width: 100%; font-size: 18px; padding: 16px;">Continue to Login Portal ➔</button>
-    </div>
+        <form id="loginForm" class="auth-card">
+          <h2>Login</h2>
+          <label class="field">
+            <span>Name:</span>
+            <input id="loginName" autocomplete="username" required="" maxlength="32">
+          </label>
+          <label class="field">
+            <span>Password:</span>
+            <input id="loginPassword" type="password" autocomplete="current-password" required="" maxlength="64">
+          </label>
+          <button class="primary" type="submit">Login!</button>
+          <button class="secondary" type="button" data-auth-choice="">Back</button>
+        </form>
+      </div>
+    </section>
+  </main>
 
-    <div id="token-auth-screen" class="screen">
-        <h2 style="color: var(--gold-color); margin-top: 0;">Console Token Entry</h2>
-        <p style="color: #94a3b8; text-align: center; margin-bottom: 25px;">Enter the global security keycode to initialize authentication channels.</p>
-        
-        <div id="token-auth-error" class="error-message-text">Incorrect security keycode! Reference master documentation.</div>
-
-        <div>
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">SYSTEM KEYCODE:</label>
-            <input type="password" id="sys-token-input" placeholder="Enter security keycode here...">
+  <main id="appScreen" class="screen active">
+    <section id="appRoot" class="app admin">
+      <header class="topbar">
+        <div class="brand">
+          <strong>Jeremy's Learning Program</strong>
+          <span id="userLine">Admin account</span>
         </div>
-        <button id="token-submit-btn" style="width: 100%; background: var(--accent-color); color: #0f172a;">Verify Console Key ➔</button>
-        <button id="token-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Splash</button>
-    </div>
-
-    <div id="gateway-screen" class="screen" style="text-align: center;">
-        <h2 style="color: var(--accent-color); margin-top: 0;">Access Portal</h2>
-        <p style="color: #94a3b8; margin-bottom: 30px;">Choose whether to access an existing profile or configure a brand new identity.</p>
-        <div class="menu-grid">
-            <button id="gateway-login-btn" style="background: var(--success-color); color: white;">Log In to Existing Account</button>
-            <button id="gateway-register-btn" style="background: #475569; color: white;">Register New Account</button>
-            <button id="gateway-back-btn" style="background:#0f172a; border: 1px solid #334155; color: white; margin-top: 10px;">➔ Back to Keycode Entry</button>
+        <div id="creditsPill" class="credit-pill">Credits: Unlimited</div>
+        <div class="admin-tools">
+          <button class="small-icon" id="leaderboardBtn" title="Credits Leaderboard">Board</button>
+          <button class="small-icon" id="logsBtn" title="Logs">Logs</button>
+          <button class="small-icon" id="accountsBtn" title="Account Deactivations">Accounts</button>
         </div>
-    </div>
+        <button id="codeBtn" class="small-icon admin-only" title="View Code">Code</button>
+        <button id="settingsBtn" class="small-icon" title="Settings">Settings</button>
+      </header>
 
-    <div id="register-profile-screen" class="screen">
-        <h2 style="color: var(--accent-color); margin-top: 0;">Account Setup (1/2)</h2>
-        <p style="color: #94a3b8; margin-bottom: 25px; text-align: center;">Please provide your basic structural profile info.</p>
-        
-        <div id="register-profile-error" class="error-message-text">Fields cannot be blank!</div>
-
-        <div>
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">USERNAME / IDENTITY</label>
-            <input type="text" id="reg-name-input" placeholder="Enter your full name...">
-            
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">EDUCATIONAL GRADE LEVEL (3-11)</label>
-            <select id="reg-grade-select">
-                <option value="Grade 3">Grade 3</option>
-                <option value="Grade 4">Grade 4</option>
-                <option value="Grade 5">Grade 5</option>
-                <option value="Grade 6">Grade 6</option>
-                <option value="Grade 7">Grade 7</option>
-                <option value="Grade 8">Grade 8</option>
-                <option value="Grade 9">Grade 9</option>
-                <option value="Grade 10">Grade 10</option>
-                <option value="Grade 11">Grade 11</option>
-            </select>
-        </div>
-        <button id="reg-profile-next-btn" style="width: 100%; margin-top: 10px;">Next: Secure Account ➔</button>
-        <button id="reg-profile-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Portal</button>
-    </div>
-
-    <div id="register-password-screen" class="screen">
-        <h2 style="color: var(--purple-color); margin-top: 0;">System Security (2/2)</h2>
-        <p style="color: #94a3b8; margin-bottom: 25px; text-align: center;">Enter the global arcade system keycode to register.</p>
-        
-        <div id="register-password-error" class="error-message-text">Incorrect or invalid system keycode!</div>
-
-        <div>
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">ARCADE KEYCODE:</label>
-            <input type="password" id="reg-pass-input" placeholder="Type jeremearcadee here...">
-        </div>
-        <button id="reg-password-submit-btn" style="width: 100%; margin-top: 10px;">Finalize Registration ➔</button>
-        <button id="reg-password-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Identity Setup</button>
-    </div>
-
-    <div id="login-screen" class="screen">
-        <h2 style="color: var(--success-color); margin-top: 0;">Profile Login</h2>
-        <p style="color: #94a3b8; text-align: center; margin-bottom: 25px;">Enter your credentials carefully to open your saved dashboard.</p>
-        
-        <div id="login-error" class="error-message-text">Invalid login parameters!</div>
-
-        <div>
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">LOGIN NAME:</label>
-            <input type="text" id="login-name-input" placeholder="Type 'admin' or your username...">
-            
-            <label style="font-weight: 600; font-size: 14px; color: #cbd5e1;">PASSWORD / KEYCODE:</label>
-            <input type="password" id="login-pass-input" placeholder="Enter password or jeremearcadee...">
-        </div>
-        <button id="login-submit-btn" style="width: 100%;">Access Arcade Profile ➔</button>
-        <button id="login-back-btn" style="background:#475569; width: 100%; margin-top:10px; color:white;">➔ Back to Portal</button>
-    </div>
-
-    <div id="admin-dashboard-screen" class="screen">
-        <div class="header-widget">
-            <div style="color:var(--purple-color); font-weight:900;">👑 SYSTEM CONTROL CENTER</div>
-            <div class="credit-count" style="color:var(--purple-color);">🪙 <span>∞</span> Credits</div>
-        </div>
-
-        <h3 style="text-align:left; margin:0 0 10px 0; font-size:14px; color:#cbd5e1;">All Created Accounts</h3>
-        <div class="catalog-list" id="admin-accounts-list" style="max-height:200px;"></div>
-
-        <h3 style="text-align:left; margin:15px 0 5px 0; font-size:14px; color:#cbd5e1;">System Operations Terminal Log</h3>
-        <div class="terminal-log" id="admin-terminal-log"></div>
-
-        <button id="admin-logout-btn" style="background:var(--error-color); width:100%; color:white; margin-top:20px;">Disconnect Admin Console</button>
-    </div>
-
-    <div id="hub-screen" class="screen">
-        <div class="header-widget">
-            <div id="welcome-banner">Welcome, User</div>
-            <div class="credit-count">🪙 <span id="hub-credits">0</span> Credits</div>
-        </div>
-        <div class="menu-grid">
-            <button class="nav-btn" id="nav-play-btn"><span>🎮 Browse Available Games</span><span>➔</span></button>
-            <button class="nav-btn" id="nav-learn-hub-btn" style="border-color: var(--success-color);"><span>✏️ Access Available Lessons</span><span>➔</span></button>
-            <button class="nav-btn" id="nav-settings-btn" style="border-color: #64748b;"><span>⚙️ Open Security Settings</span><span>➔</span></button>
-            <button class="nav-btn" id="logout-btn" style="background:#475569; padding:12px; font-size:14px; margin-top:10px; color:white; justify-content:center;">Disconnect Session</button>
-        </div>
-    </div>
-
-    <div id="settings-screen" class="screen">
-        <h2 style="color: #cbd5e1; margin-top: 0;">Profile Security</h2>
-        <p style="color: #94a3b8; font-size:14px; margin-bottom:30px; text-align:center;">Manage your structural account identity data records locally.</p>
-        
-        <div style="background:#0f172a; padding:16px; border-radius:12px; border:1px solid #334155; margin-bottom:25px;">
-            <h4 style="margin:0 0 8px 0; color:var(--error-color); text-transform:uppercase;">Danger Zone</h4>
-            <p style="margin:0 0 15px 0; font-size:13px; color:#94a3b8;">This will wipe your progress and remove your profile from this environment.</p>
-            <button id="delete-own-account-btn" style="background:var(--error-color); color:white; width:100%; padding:12px;">Delete Account Permanently</button>
+      <section class="content">
+        <div id="homeView" class="">
+          <div class="home-hero">
+            <section class="panel">
+              <h2 id="homeTitle">Home, Admin</h2>
+              <p class="muted">Choose a learning path, earn credits, unlock games, and keep your progress saved on this browser.</p>
+              <div class="home-actions">
+                <button id="gamesBtn" class="big-action">
+                  <strong>Games</strong>
+                  <span>Play mini-games with credit costs and unlocks.</span>
+                </button>
+                <button id="learnBtn" class="big-action learn">
+                  <strong>Learn</strong>
+                  <span>Practice math to earn more credits.</span>
+                </button>
+              </div>
+            </section>
+            <section class="panel stats">
+              <h2>Progress</h2>
+              <div class="stat-row"><span>Unlocked games</span><b id="unlockedStat">10</b></div>
+              <div class="stat-row"><span>Games played</span><b id="playedStat">7</b></div>
+              <div class="stat-row"><span>Lessons completed</span><b id="lessonStat">0</b></div>
+              <div class="stat-row"><span>Best game score</span><b id="bestStat">33</b></div>
+            </section>
+          </div>
         </div>
 
-        <button id="exit-settings-btn" style="background:#475569; color:white; width:100%;">Return to Main Menu</button>
-    </div>
-
-    <div id="learn-hub-screen" class="screen">
-        <div class="header-widget">
-            <div>Mathematics Academy Modules</div>
-            <div class="credit-count">🪙 <span id="learn-hub-credits">0</span> Credits</div>
-        </div>
-        <div class="menu-grid">
-            <button class="nav-btn" id="topic-ratio-btn" style="border-color: var(--gold-color);"><span>🧮 Ratio Fundamentals</span><span>✏️</span></button>
-            <button class="nav-btn" id="topic-perimeter-btn" style="border-color: var(--accent-color);"><span>📐 Perimeter Calculations</span><span>✏️</span></button>
-            <button class="nav-btn" id="topic-area-btn" style="border-color: var(--purple-color);"><span>🟥 Area Determinations</span><span>✏️</span></button>
-            <button class="nav-btn" id="exit-learn-hub-btn" style="background:#475569; justify-content:center; color:white;">Return to Main Menu</button>
-        </div>
-    </div>
-
-    <div id="math-warning-screen" class="screen" style="text-align:center;">
-        <h2 style="color:var(--gold-color); margin-top:0;">Module Protocols</h2>
-        <div style="background:#0f172a; padding:22px; border-radius:14px; font-size:16px; margin-bottom:24px; line-height:1.6; font-weight:bold; border: 2px solid #f59e0b; text-align:left;">
-            <div style="color:var(--success-color); margin-bottom:8px;">• Correct responses yield +15 Credits</div>
-            <div style="color:var(--error-color);">• Incorrect responses penalize -10 Credits</div>
-        </div>
-        <button id="start-math-btn" style="background:var(--success-color); width:100%; font-size:18px; padding:15px; margin-bottom:10px; color:white;">Begin Assessment</button>
-        <button id="cancel-math-btn" style="background:#475569; width:100%; color:white;">Cancel</button>
-    </div>
-
-    <div id="learn-screen" class="screen">
-        <div class="header-widget" style="margin-bottom:10px;">
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <div id="math-classroom-title" style="font-weight:800; color:var(--accent-color);">Module Workspace</div>
-                <div id="math-classroom-grade" style="font-size:12px; color:#94a3b8;">Grade</div>
+        <div id="gamesView" class="hidden">
+          <div class="view-head">
+            <h2>Games</h2>
+            <button class="secondary" data-go-home="">Back</button>
+          </div>
+          <div id="gamesGrid" class="grid">
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 1</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 25</span>
+              </div>
+              <h3>Flappy Bird</h3>
             </div>
-            <div class="credit-count">🪙 <span id="learn-credits">0</span> Credits</div>
+            <p class="muted">Fly through moving gaps and keep your timing sharp.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="flappy">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 2</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 25</span>
+              </div>
+              <h3>Tap simulator</h3>
+            </div>
+            <p class="muted">Tap the dropping circle before it hits the bottom.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="tap">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 3</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 25</span>
+              </div>
+              <h3>Ninja Fruit</h3>
+            </div>
+            <p class="muted">Slice fruit targets before they fade away.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="fruit">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 4</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 30</span>
+              </div>
+              <h3>Dinosaur Game</h3>
+            </div>
+            <p class="muted">Jump over obstacles in the classic runner style.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="dino">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 5</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 30</span>
+              </div>
+              <h3>Pacman</h3>
+            </div>
+            <p class="muted">Collect dots while avoiding the wandering ghosts.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="pacman">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 6</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 30</span>
+              </div>
+              <h3>Bombing Simulator</h3>
+            </div>
+            <p class="muted">Hit the target zone without missing.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="bomb">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 7</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 30</span>
+              </div>
+              <h3>Fishing</h3>
+            </div>
+            <p class="muted">Cast, wait, and reel in at the perfect moment.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="fishing">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 8</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 30</span>
+              </div>
+              <h3>Tetris</h3>
+            </div>
+            <p class="muted">Stack falling blocks and clear full rows.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="tetris">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 9</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 45</span>
+              </div>
+              <h3>Blockblast</h3>
+            </div>
+            <p class="muted">Place block pieces, clear rows and columns, and chase a high score.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="blockblast">Play</button>
+            </div>
+          </article>
+        
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game 10</span>
+                <span class="tag">Unlocked</span>
+                <span class="tag">Play: 45</span>
+              </div>
+              <h3>Chess</h3>
+            </div>
+            <p class="muted">Play a compact chess match against a bot.</p>
+            <div class="tile-actions">
+              <button class="primary" data-play="chess">Play</button>
+            </div>
+          </article>
         </div>
-        <div id="study-box-display">Formulating academic challenge...</div>
-        <div class="study-options" id="study-options-container" style="display:flex; flex-direction:column; gap:10px;"></div>
-        <button id="exit-learn-btn" style="width:100%; background:#475569; margin-top:20px; color:white;">Exit Module</button>
+        </div>
+
+        <div id="learnView" class="hidden">
+          <div class="view-head">
+            <h2>Math</h2>
+            <button class="secondary" data-go-home="">Back</button>
+          </div>
+          <div id="lessonGrid" class="grid">
+        <article class="lesson-card">
+          <h3>Perimeter</h3>
+          <p class="muted">Practice adding the outside lengths of shapes.</p>
+          <span class="tag">Reward: 35 credits</span>
+          <button class="primary" data-lesson="perimeter">Start Lesson</button>
+        </article>
+      
+        <article class="lesson-card">
+          <h3>Area</h3>
+          <p class="muted">Practice finding how much space shapes cover.</p>
+          <span class="tag">Reward: 35 credits</span>
+          <button class="primary" data-lesson="area">Start Lesson</button>
+        </article>
+      
+        <article class="lesson-card">
+          <h3>Calculus</h3>
+          <p class="muted">Start with friendly derivative and slope questions.</p>
+          <span class="tag">Reward: 50 credits</span>
+          <button class="primary" data-lesson="calculus">Start Lesson</button>
+        </article>
+      </div>
+        </div>
+      </section>
+
+      <button id="logoutBtn" class="secondary logout">Logout</button>
+    </section>
+  </main>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="modalTitle">Settings</h2>
+        <button id="closeModalBtn" class="small-icon" title="Close">Close</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
     </div>
+  </div>
 
-    <div id="catalog-screen" class="screen">
-        <div class="header-widget">
-            <div>Available Games</div>
-            <div class="credit-count">🪙 <span id="catalog-credits">0</span> Credits</div>
-        </div>
+  <div id="toast" class="toast">Logged out. Progress saved.</div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-            <div class="board-container">
-                <div class="board-title">📈 Top Balance</div>
-                <div id="leaderboard-high-rich"></div>
-            </div>
-            <div class="board-container">
-                <div class="board-title">📉 Low Balance</div>
-                <div id="leaderboard-low-poor"></div>
-            </div>
-        </div>
+  <script>
+    const STORAGE_KEY = "jeremyLearningProgram.v1";
+    const ADMIN_NAME = "Admin";
+    const ADMIN_PASSWORD = "adminbull71jj";
 
-        <div class="catalog-list" id="catalog-list-element"></div>
-        <button id="exit-catalog-btn" style="width:100%; background:#475569; margin-top:15px; color:white;">Return to Main Menu</button>
-    </div>
+    const games = [
+      { id: "flappy", name: "Flappy Bird", unlock: 0, play: 25, desc: "Fly through moving gaps and keep your timing sharp." },
+      { id: "tap", name: "Tap simulator", unlock: 0, play: 25, desc: "Tap the dropping circle before it hits the bottom." },
+      { id: "fruit", name: "Ninja Fruit", unlock: 0, play: 25, desc: "Slice fruit targets before they fade away." },
+      { id: "dino", name: "Dinosaur Game", unlock: 100, play: 30, desc: "Jump over obstacles in the classic runner style." },
+      { id: "pacman", name: "Pacman", unlock: 100, play: 30, desc: "Collect dots while avoiding the wandering ghosts." },
+      { id: "bomb", name: "Bombing Simulator", unlock: 100, play: 30, desc: "Hit the target zone without missing." },
+      { id: "fishing", name: "Fishing", unlock: 100, play: 30, desc: "Cast, wait, and reel in at the perfect moment." },
+      { id: "tetris", name: "Tetris", unlock: 100, play: 30, desc: "Stack falling blocks and clear full rows." },
+      { id: "blockblast", name: "Blockblast", unlock: 250, play: 45, desc: "Place block pieces, clear rows and columns, and chase a high score." },
+      { id: "chess", name: "Chess", unlock: 250, play: 45, desc: "Play a compact chess match against a bot." }
+    ];
 
-    <div id="arena-screen" class="screen" style="position:relative;">
-        <div class="modal-overlay" id="math-disruption-overlay">
-            <div class="modal-card">
-                <h3 style="color:var(--purple-color); margin-top:0; font-weight:900;">⚠️ DISRUPTION ENCOUNTERED</h3>
-                <p style="color:#cbd5e1; font-size:13px; margin-top:-5px;">Provide the accurate response to secure safe passage!</p>
-                <p id="modal-question-text" style="color:white; font-size:18px; font-weight:700; margin:15px 0;"></p>
-                <div class="modal-options" id="modal-options-container"></div>
-            </div>
-        </div>
+    const lessons = [
+      {
+        id: "perimeter",
+        name: "Perimeter",
+        desc: "Practice adding the outside lengths of shapes.",
+        reward: 35,
+        questions: [
+          { q: "A rectangle is 8 cm long and 5 cm wide. What is its perimeter?", a: "26", options: ["13", "26", "40", "21"] },
+          { q: "A square has side length 7. What is its perimeter?", a: "28", options: ["14", "21", "28", "49"] },
+          { q: "A triangle has sides 6, 9, and 10. What is its perimeter?", a: "25", options: ["19", "24", "25", "54"] }
+        ]
+      },
+      {
+        id: "area",
+        name: "Area",
+        desc: "Practice finding how much space shapes cover.",
+        reward: 35,
+        questions: [
+          { q: "A rectangle is 9 by 4. What is its area?", a: "36", options: ["13", "26", "36", "40"] },
+          { q: "A square has side length 6. What is its area?", a: "36", options: ["12", "24", "30", "36"] },
+          { q: "A triangle has base 10 and height 8. What is its area?", a: "40", options: ["18", "40", "80", "20"] }
+        ]
+      },
+      {
+        id: "calculus",
+        name: "Calculus",
+        desc: "Start with friendly derivative and slope questions.",
+        reward: 50,
+        questions: [
+          { q: "What is the derivative of x^2?", a: "2x", options: ["x", "2x", "x^3", "2"] },
+          { q: "What is the derivative of 5x?", a: "5", options: ["x", "5", "5x", "0"] },
+          { q: "If f(x)=x^3, what is f'(x)?", a: "3x^2", options: ["x^2", "3x", "3x^2", "x^4"] }
+        ]
+      }
+    ];
 
-        <div class="modal-overlay" id="game-over-overlay">
-            <div class="modal-card" style="border-color: var(--error-color);">
-                <h3 style="color:var(--error-color); margin-top:0; font-weight:900; font-size:24px;">RUN CONCLUDED</h3>
-                <p id="game-over-message-text" style="color:white; font-size:16px; margin:15px 0; font-weight:600;"></p>
-                <button id="modal-close-run-btn" style="background:var(--accent-color); width:100%; color:#0f172a;">Return to Catalog</button>
-            </div>
-        </div>
+    const defaultState = () => ({
+      users: [],
+      currentUserId: null,
+      logs: [],
+      guestTheme: "black",
+      lastSaved: Date.now()
+    });
 
-        <div class="hud-row">
-            <div>Score: <span id="arena-score">0</span></div>
-            <div id="brick-balls-counter" style="color:var(--accent-color); display:none;">Balls Remaining: 3</div>
-            <div>Record: <span id="arena-highscore">0</span></div>
-            <div id="game-math-ticker" style="color:var(--error-color);">Next Event: 20s</div>
-        </div>
-        <div id="canvas-viewport">
-            <canvas id="gameCanvas" width="400" height="380"></canvas>
-        </div>
-        <div id="tetris-controls">
-            <button class="nav-btn" id="t-left" style="padding:12px; justify-content:center;">◀</button>
-            <button class="nav-btn" id="t-rot" style="padding:12px; background:var(--accent-color); color:#0f172a; justify-content:center;">🔄</button>
-            <button class="nav-btn" id="t-right" style="padding:12px; justify-content:center;">▶</button>
-            <div></div>
-            <button class="nav-btn" id="t-down" style="padding:12px; justify-content:center;">▼</button>
-            <div></div>
-        </div>
-        <div class="game-foot-row">
-            <button id="pause-afk-btn" style="background:#f59e0b; color:#0f172a;">Pause Simulation</button>
-            <button id="quit-arena-btn" style="background:var(--error-color); color:white;">End Run</button>
-        </div>
-    </div>
+    let state = loadState();
+    let currentGameLoop = null;
 
-    <script>
-        let registeredProfilesDatabase = {}; 
-        let activeLoggedUserKey = null;
-        let systemLogHistory = [];
+    const $ = (id) => document.getElementById(id);
 
-        let userDataProfile = { name: "Guest", grade: "Grade 3" };
-        let userCredits = 0;
-        let sessionTimer = 0;
-        let healthAlertTriggered = false;
-        let isAdminModeActive = false;
-        let selectedMathTopic = "Ratio";
-
-        let registrationInProgress = { name: "", grade: "" };
-
-        let currentSpeedMultiplier = 1.0;
-        let invincibilityTimerActive = false;
-        let emergencyHazardsActive = false;
-        let modificationStateExpiryTime = 0;
-
-        let highscores = {
-            dino: 0, ninja: 0, clicker: 0, catcher: 0, tetris: 0,
-            pong: 0, snake: 0, invader: 0, flappy: 0, breakout: 0
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaultState(),
+          ...parsed,
+          users: Array.isArray(parsed.users) ? parsed.users : [],
+          logs: Array.isArray(parsed.logs) ? parsed.logs : []
         };
+      } catch {
+        return defaultState();
+      }
+    }
 
-        const MASTER_BLUEPRINT_MANIFEST = [
-            { id: 'dino', name: '1. Chrono T-Rex Run', desc: 'Evade oncoming primeval hazards across an endless desert.', playPrice: 25, requiredUnlock: 0, unlocked: true },
-            { id: 'ninja', name: '2. Velocity Blade', desc: 'Slice ascending geometric targets inside a high-speed matrix.', playPrice: 25, requiredUnlock: 0, unlocked: true },
-            { id: 'clicker', name: '3. Meteor Intercept', desc: 'Neutralize falling spatial anomalies before catastrophic impact.', playPrice: 25, requiredUnlock: 0, unlocked: true },
-            { id: 'catcher', name: '4. Node Collector', desc: 'Secure descending high-value structural components cleanly.', playPrice: 25, requiredUnlock: 0, unlocked: true },
-            { id: 'tetris', name: '5. Spatial Matrix', desc: 'Organize dropping structural blocks to complete lines.', playPrice: 25, requiredUnlock: 0, unlocked: true },
-            { id: 'pong', name: '6. Cybernetic Deflector', desc: 'Manipulate vector fields against a predictive AI component.', playPrice: 25, requiredUnlock: 100, unlocked: false },
-            { id: 'snake', name: '7. Vector Constrictor', desc: 'Synthesize data trails avoiding perimeter walls and collisions.', playPrice: 25, requiredUnlock: 150, unlocked: false },
-            { id: 'invader', name: '8. Perimeter Shield', desc: 'Neutralize descending defensive arrays systematically.', playPrice: 25, requiredUnlock: 200, unlocked: false },
-            { id: 'flappy', name: '9. Aviary Flight', desc: 'Navigate vibrant architectural caverns despite constant gravity.', playPrice: 25, requiredUnlock: 250, unlocked: false },
-            { id: 'breakout', name: '10. Brick Demolition', desc: 'Deconstruct structural layers via ball rebounds across 3 lives.', playPrice: 25, requiredUnlock: 300, unlocked: false }
-        ];
+    function saveState(reason = "Auto save") {
+      state.lastSaved = Date.now();
+      if (reason) addLog(reason, false);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
 
-        let GAMES_MANIFEST = [];
+    function addLog(message, shouldSave = true) {
+      const user = getCurrentUser();
+      state.logs.unshift({
+        id: cryptoId(),
+        time: new Date().toLocaleString(),
+        user: user ? `${user.name} (${user.id.slice(0, 6)})` : "System",
+        message
+      });
+      state.logs = state.logs.slice(0, 160);
+      if (shouldSave) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
 
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let currentActiveGameId = null;
-        let score = 0;
-        let isEnginePaused = false;
-        let runFrameRequest = null;
-        let midGameMathInterval = null;
-        let gameCountdownClock = 20;
+    function cryptoId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    }
 
-        let activeCorrectOptionIdx = 0;
-        let pointer = { x: 0, y: 0, isDown: false, prevX: 0, prevY: 0 };
-        let gameState = {};
+    function getCurrentUser() {
+      return state.users.find((user) => user.id === state.currentUserId) || null;
+    }
 
-        const SHAPES = [
-            [[1, 1, 1, 1]], [[1, 1, 1], [0, 1, 0]], [[1, 1, 1], [1, 0, 0]],
-            [[1, 1, 1], [0, 0, 1]], [[1, 1], [1, 1]], [[1, 1, 0], [0, 1, 1]], [[0, 1, 1], [1, 1, 0]]
-        ];
-        const COLORS = ['#38bdf8', '#c084fc', '#60a5fa', '#fb923c', '#facc15', '#4ade80', '#f87171'];
+    function canonicalName(name) {
+      return String(name || "").trim().toLowerCase();
+    }
 
-        function pushTerminalSystemLog(message) {
-            const time = new Date().toLocaleTimeString();
-            systemLogHistory.unshift(`[${time}] ${message}`);
-            if(systemLogHistory.length > 40) systemLogHistory.pop();
-            
-            const logEl = document.getElementById('admin-terminal-log');
-            if(logEl) {
-                logEl.innerHTML = systemLogHistory.join("<br>");
-            }
-        }
+    function formatName(name) {
+      const clean = String(name || "").trim().replace(/\s+/g, " ");
+      return clean.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+    }
 
-        window.addEventListener('load', () => {
-            loadApplicationMasterDatabase();
-            autoInjectAdminAccount();
+    function applyTheme(theme) {
+      const chosen = theme === "white" ? "white" : "black";
+      document.body.classList.toggle("theme-white", chosen === "white");
+      document.body.classList.toggle("theme-black", chosen === "black");
+    }
+
+    function showAuthChoice() {
+      $("authChoice").classList.remove("hidden");
+      $("authForms").classList.add("hidden");
+      $("signupForm").classList.add("hidden");
+      $("loginForm").classList.add("hidden");
+      applyTheme(state.guestTheme || "black");
+      showScreen("authScreen");
+    }
+
+    function showAuthForm(mode, prefillName = "") {
+      $("authChoice").classList.add("hidden");
+      $("authForms").classList.remove("hidden");
+      $("signupForm").classList.toggle("hidden", mode !== "signup");
+      $("loginForm").classList.toggle("hidden", mode !== "login");
+      if (prefillName) $("loginName").value = formatName(prefillName);
+      applyTheme(state.guestTheme || "black");
+      showScreen("authScreen");
+    }
+
+    function isAdmin(user = getCurrentUser()) {
+      return Boolean(user && user.role === "admin");
+    }
+
+    function createUser(name, password, role = "user") {
+      return {
+        id: role === "admin" ? "admin-account" : cryptoId(),
+        name: role === "admin" ? ADMIN_NAME : formatName(name),
+        password,
+        role,
+        active: true,
+        credits: role === "admin" ? 999999999 : 120,
+        theme: "black",
+        unlocked: games.filter((game) => game.unlock === 0).map((game) => game.id),
+        played: 0,
+        lessonsCompleted: 0,
+        bestScore: 0,
+        createdAt: new Date().toLocaleString()
+      };
+    }
+
+    function ensureAdmin() {
+      const existing = state.users.find((user) => user.role === "admin");
+      state.users.forEach((user) => {
+        user.name = user.role === "admin" ? ADMIN_NAME : formatName(user.name);
+        user.theme = user.theme === "white" ? "white" : "black";
+        user.active = user.role === "admin" ? true : user.active !== false;
+        user.unlocked = Array.isArray(user.unlocked) ? user.unlocked : games.filter((game) => game.unlock === 0).map((game) => game.id);
+        user.played = user.played || 0;
+        user.lessonsCompleted = user.lessonsCompleted || 0;
+        user.bestScore = user.bestScore || 0;
+      });
+      if (!existing) {
+        state.users.push(createUser(ADMIN_NAME, ADMIN_PASSWORD, "admin"));
+        addLog("Admin account created.");
+      } else {
+        existing.name = ADMIN_NAME;
+        existing.password = ADMIN_PASSWORD;
+        existing.active = true;
+        existing.id = "admin-account";
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.remove("active"));
+      $(id).classList.add("active");
+    }
+
+    function showView(id) {
+      ["homeView", "gamesView", "learnView"].forEach((viewId) => $(viewId).classList.add("hidden"));
+      $(id).classList.remove("hidden");
+      renderApp();
+    }
+
+    function toast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function openModal(title, html) {
+      $("modalTitle").textContent = title;
+      $("modalBody").innerHTML = html;
+      $("modal").classList.add("active");
+    }
+
+    function confirmModal(title, message, confirmLabel, onConfirm) {
+      openModal(title, `
+        <div class="settings-grid">
+          <section class="admin-section">
+            <p class="muted">${escapeHtml(message)}</p>
+            <div class="controls">
+              <button id="confirmYesBtn" class="danger" type="button">${escapeHtml(confirmLabel)}</button>
+              <button id="confirmNoBtn" class="secondary" type="button">Cancel</button>
+            </div>
+          </section>
+        </div>
+      `);
+      $("confirmYesBtn").addEventListener("click", onConfirm);
+      $("confirmNoBtn").addEventListener("click", closeModal);
+    }
+
+    function closeModal() {
+      stopGameLoop();
+      $("modal").classList.remove("active");
+      $("modalBody").innerHTML = "";
+    }
+
+    function stopGameLoop() {
+      if (currentGameLoop) {
+        currentGameLoop();
+        currentGameLoop = null;
+      }
+    }
+
+    function spendCredits(amount) {
+      const user = getCurrentUser();
+      if (isAdmin(user)) return true;
+      if (user.credits < amount) {
+        toast("You need more credits. Finish math lessons to earn some.");
+        return false;
+      }
+      user.credits -= amount;
+      return true;
+    }
+
+    function addCredits(amount, reason) {
+      const user = getCurrentUser();
+      if (!user || isAdmin(user)) return;
+      user.credits += amount;
+      addLog(`${reason}: +${amount} credits`);
+      saveState("");
+      renderApp();
+    }
+
+    function completeGame(score) {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.played += 1;
+      user.bestScore = Math.max(user.bestScore || 0, score || 0);
+      const reward = Math.max(5, Math.min(60, Math.floor((score || 0) / 3)));
+      addCredits(reward, "Game reward");
+      toast(`Game finished. Score ${score}. Reward ${isAdmin(user) ? "unlimited admin access" : reward + " credits"}.`);
+      renderApp();
+    }
+
+    function unlockGame(game) {
+      const user = getCurrentUser();
+      if (!user || user.unlocked.includes(game.id)) return;
+      if (!spendCredits(game.unlock)) return;
+      user.unlocked.push(game.id);
+      addLog(`Unlocked ${game.name}`);
+      saveState("");
+      renderGames();
+      renderApp();
+      toast(`${game.name} unlocked.`);
+    }
+
+    function playGame(game) {
+      const user = getCurrentUser();
+      if (!user) return;
+      const unlocked = isAdmin(user) || user.unlocked.includes(game.id);
+      if (!unlocked) {
+        unlockGame(game);
+        return;
+      }
+      if (game.id === "chess") {
+        openModal("Chess Setup", `
+          <div class="settings-grid">
+            <section class="admin-section">
+              <h3>Choose Your Color</h3>
+              <p class="muted">White moves upward from the bottom. Black moves downward from the top. Starting the game costs ${isAdmin(user) ? "no credits for admin" : game.play + " credits"}.</p>
+              <div class="controls">
+                <button class="primary" data-chess-color="white" type="button">Play White</button>
+                <button class="secondary" data-chess-color="black" type="button">Play Black</button>
+              </div>
+            </section>
+          </div>
+        `);
+        $("modalBody").querySelectorAll("[data-chess-color]").forEach((btn) => {
+          btn.addEventListener("click", () => launchGame(game, { playerColor: btn.dataset.chessColor }));
         });
+        return;
+      }
+      launchGame(game, {});
+    }
 
-        function autoInjectAdminAccount() {
-            registeredProfilesDatabase["admin"] = {
-                name: "Admin",
-                grade: "All Levels",
-                password: "jerethebest9142",
-                credits: 9999999, 
-                highscores: { dino: 999, ninja: 999, clicker: 999, catcher: 999, tetris: 999, pong: 999, snake: 999, invader: 999, flappy: 999, breakout: 999 },
-                unlockedGames: ['dino', 'ninja', 'clicker', 'catcher', 'tetris', 'pong', 'snake', 'invader', 'flappy', 'breakout']
-            };
-            pushTerminalSystemLog("System Engine: Pre-built admin account synced automatically into engine runtime registry.");
+    function launchGame(game, options) {
+      const user = getCurrentUser();
+      if (!user) return;
+      if (!spendCredits(game.play)) return;
+      addLog(`Played ${game.name}`);
+      saveState("");
+      const needsTallCanvas = ["tetris", "chess", "blockblast"].includes(game.id);
+      const gameHint = game.id === "fruit" ? "Drag across fruit to slice it" : "Click canvas or use keyboard controls";
+      openModal(game.name, `
+        <div class="game-shell ${needsTallCanvas ? "tall" : ""}">
+          <div class="game-meta">
+            <span class="tag">Cost: ${isAdmin(user) ? "Unlimited" : game.play + " credits"}</span>
+            <span class="tag">${gameHint}</span>
+          </div>
+          <canvas id="gameCanvas" width="720" height="${needsTallCanvas ? "620" : "440"}"></canvas>
+          <div id="gameInfo" class="muted"></div>
+          <div class="controls">
+            <button class="secondary" id="restartGameBtn">Restart</button>
+            <button class="primary" id="finishGameBtn">Finish</button>
+          </div>
+        </div>
+      `);
+      renderApp();
+      startGame(game.id, options);
+    }
+
+    function renderApp() {
+      const user = getCurrentUser();
+      if (!user) return;
+      applyTheme(user.theme);
+      $("appRoot").classList.toggle("admin", isAdmin(user));
+      $("userLine").textContent = isAdmin(user) ? "Admin account" : `Signed in as ${user.name}`;
+      $("homeTitle").textContent = `Home, ${user.name}`;
+      $("creditsPill").textContent = isAdmin(user) ? "Credits: Unlimited" : `Credits: ${user.credits}`;
+      $("unlockedStat").textContent = isAdmin(user) ? games.length : user.unlocked.length;
+      $("playedStat").textContent = user.played || 0;
+      $("lessonStat").textContent = user.lessonsCompleted || 0;
+      $("bestStat").textContent = user.bestScore || 0;
+    }
+
+    function renderGames() {
+      const user = getCurrentUser();
+      const grid = $("gamesGrid");
+      grid.innerHTML = games.map((game, index) => {
+        const unlocked = isAdmin(user) || user.unlocked.includes(game.id);
+        const unlockText = unlocked ? "Unlocked" : `Unlock: ${game.unlock} credits`;
+        const lockClass = unlocked ? "" : " locked";
+        return `
+          <article class="game-tile">
+            <div>
+              <div class="tag-row">
+                <span class="tag">Game ${index + 1}</span>
+                <span class="tag${lockClass}">${unlockText}</span>
+                <span class="tag">Play: ${game.play}</span>
+              </div>
+              <h3>${game.name}</h3>
+            </div>
+            <p class="muted">${game.desc}</p>
+            <div class="tile-actions">
+              ${unlocked ? `<button class="primary" data-play="${game.id}">Play</button>` : `<button class="secondary" data-unlock="${game.id}">Unlock</button>`}
+            </div>
+          </article>
+        `;
+      }).join("");
+      grid.querySelectorAll("[data-play]").forEach((btn) => btn.addEventListener("click", () => playGame(games.find((game) => game.id === btn.dataset.play))));
+      grid.querySelectorAll("[data-unlock]").forEach((btn) => btn.addEventListener("click", () => unlockGame(games.find((game) => game.id === btn.dataset.unlock))));
+    }
+
+    function renderLessons() {
+      $("lessonGrid").innerHTML = lessons.map((lesson) => `
+        <article class="lesson-card">
+          <h3>${lesson.name}</h3>
+          <p class="muted">${lesson.desc}</p>
+          <span class="tag">Reward: ${lesson.reward} credits</span>
+          <button class="primary" data-lesson="${lesson.id}">Start Lesson</button>
+        </article>
+      `).join("");
+      $("lessonGrid").querySelectorAll("[data-lesson]").forEach((btn) => btn.addEventListener("click", () => startLesson(lessons.find((lesson) => lesson.id === btn.dataset.lesson))));
+    }
+
+    function startLesson(lesson) {
+      let index = 0;
+      let correct = 0;
+      openModal(lesson.name, `<div id="quizBox" class="quiz"></div>`);
+      const draw = () => {
+        const question = lesson.questions[index];
+        if (!question) {
+          const user = getCurrentUser();
+          const earned = Math.round(lesson.reward * (correct / lesson.questions.length));
+          if (!isAdmin(user)) user.credits += earned;
+          user.lessonsCompleted += 1;
+          addLog(`Completed ${lesson.name} lesson with ${correct}/${lesson.questions.length}`);
+          saveState("");
+          renderApp();
+          $("quizBox").innerHTML = `
+            <div class="quiz-question">Lesson complete: ${correct}/${lesson.questions.length} correct</div>
+            <p class="muted">${isAdmin(user) ? "Admin accounts have unlimited credits." : `You earned ${earned} credits.`}</p>
+            <button class="primary" id="doneLessonBtn">Done</button>
+          `;
+          $("doneLessonBtn").addEventListener("click", closeModal);
+          return;
         }
-
-        document.getElementById('splash-continue-btn').addEventListener('click', () => {
-            document.getElementById('token-auth-error').style.display = 'none';
-            document.getElementById('sys-token-input').value = "";
-            navigateTo('token-auth-screen');
-        });
-
-        document.getElementById('token-submit-btn').addEventListener('click', () => {
-            const tokenInput = document.getElementById('sys-token-input').value.trim();
-            const errBox = document.getElementById('token-auth-error');
-            errBox.style.display = 'none';
-
-            if (tokenInput === "jeremearcadee") {
-                showToast("Console token verification accepted.");
-                pushTerminalSystemLog("Token Authorization: Access code signature accepted.");
-                navigateTo('gateway-screen');
+        $("quizBox").innerHTML = `
+          <div class="tag">Question ${index + 1} of ${lesson.questions.length}</div>
+          <div class="quiz-question">${question.q}</div>
+          <div class="quiz-options">
+            ${question.options.map((option) => `<button data-answer="${option}">${option}</button>`).join("")}
+          </div>
+        `;
+        $("quizBox").querySelectorAll("[data-answer]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (btn.dataset.answer === question.a) {
+              correct += 1;
+              toast("Correct.");
             } else {
-                errBox.style.display = 'block';
+              toast(`Not quite. Correct answer: ${question.a}`);
             }
+            index += 1;
+            draw();
+          });
         });
+      };
+      draw();
+    }
 
-        document.getElementById('token-back-btn').addEventListener('click', () => navigateTo('splash-screen'));
-        document.getElementById('gateway-back-btn').addEventListener('click', () => navigateTo('token-auth-screen'));
-        document.getElementById('reg-profile-back-btn').addEventListener('click', () => navigateTo('gateway-screen'));
-        document.getElementById('reg-password-back-btn').addEventListener('click', () => navigateTo('register-profile-screen'));
-        document.getElementById('login-back-btn').addEventListener('click', () => navigateTo('gateway-screen'));
-
-        document.getElementById('gateway-login-btn').addEventListener('click', () => {
-            document.getElementById('login-error').style.display = 'none';
-            navigateTo('login-screen');
+    function settingsModal() {
+      const user = getCurrentUser();
+      openModal("Settings", `
+        <div class="settings-grid">
+          <section class="admin-section">
+            <h3>Color Preference</h3>
+            <label class="field">
+              <span>Theme</span>
+              <select id="themeSelect">
+                <option value="black" ${user.theme !== "white" ? "selected" : ""}>Black</option>
+                <option value="white" ${user.theme === "white" ? "selected" : ""}>White</option>
+              </select>
+            </label>
+          </section>
+          ${isAdmin(user) ? `<section class="admin-section"><h3>Admin Account</h3><p class="muted">The admin name and password stay fixed so the prebuilt admin login always works. This account cannot be deactivated or deleted.</p></section>` : `
+          <form id="changeNameForm" class="admin-section">
+            <h3>Change Name</h3>
+            <label class="field"><span>New name</span><input id="newName" value="${escapeHtml(user.name)}" required maxlength="32"></label>
+            <button class="primary">Save Name</button>
+          </form>
+          <form id="changePasswordForm" class="admin-section">
+            <h3>Change Password</h3>
+            <label class="field"><span>New password</span><input id="newPassword" type="password" required minlength="4" maxlength="64"></label>
+            <button class="primary">Save Password</button>
+          </form>
+          <section class="admin-section">
+            <h3>Deactivate Account</h3>
+            <p class="muted">This disables your account and logs you out. Admin can remove inactive accounts later.</p>
+            <button id="deactivateBtn" class="danger" type="button">Deactivate Account</button>
+          </section>`}
+          <section class="admin-section">
+            <h3>Account Access</h3>
+            <div class="controls">
+              <button id="loginScreenBtn" class="secondary" type="button">Login Screen</button>
+              <button id="signupScreenBtn" class="secondary" type="button">Signup Screen</button>
+              <button id="switchAccountBtn" class="primary" type="button">Switch Account</button>
+            </div>
+          </section>
+        </div>
+      `);
+      $("themeSelect").addEventListener("change", () => {
+        user.theme = $("themeSelect").value;
+        state.guestTheme = user.theme;
+        addLog(`Changed theme to ${user.theme}`);
+        saveState("");
+        applyTheme(user.theme);
+        toast("Color preference saved.");
+      });
+      if ($("changeNameForm")) {
+        $("changeNameForm").addEventListener("submit", (event) => {
+          event.preventDefault();
+          const nextName = formatName($("newName").value);
+          if (canonicalName(nextName) === canonicalName(ADMIN_NAME)) {
+            toast("That name is reserved for the built-in admin account.");
+            return;
+          }
+          user.name = nextName;
+          addLog("Changed name");
+          saveState("");
+          renderApp();
+          toast("Name changed.");
         });
-        document.getElementById('gateway-register-btn').addEventListener('click', () => {
-            document.getElementById('register-profile-error').style.display = 'none';
-            navigateTo('register-profile-screen');
+      }
+      if ($("changePasswordForm")) {
+        $("changePasswordForm").addEventListener("submit", (event) => {
+          event.preventDefault();
+          user.password = $("newPassword").value;
+          addLog("Changed password");
+          saveState("");
+          $("newPassword").value = "";
+          toast("Password changed.");
         });
-
-        document.getElementById('reg-profile-next-btn').addEventListener('click', () => {
-            const chosenName = document.getElementById('reg-name-input').value.trim();
-            const errBox = document.getElementById('register-profile-error');
-            errBox.style.display = 'none';
-
-            if (!chosenName) {
-                errBox.style.display = 'block';
-                return;
-            }
-            if(chosenName.toLowerCase() === 'admin') {
-                errBox.innerText = "System identity reservation conflict! Choose another username.";
-                errBox.style.display = 'block';
-                return;
-            }
-            registrationInProgress.name = chosenName;
-            registrationInProgress.grade = document.getElementById('reg-grade-select').value;
-            navigateTo('register-password-screen');
+      }
+      if ($("deactivateBtn")) {
+        $("deactivateBtn").addEventListener("click", () => {
+          confirmModal("Confirm Deactivation", "Are you sure you want to deactivate this account? You will be logged out, and admin will need to reactivate or delete it later.", "Deactivate Account", () => {
+            user.active = false;
+            addLog("Deactivated own account");
+            state.currentUserId = null;
+            saveState("");
+            closeModal();
+            showAuthForm("login");
+            toast("Account deactivated.");
+          });
         });
+      }
+      $("loginScreenBtn").addEventListener("click", () => goAuth("login"));
+      $("signupScreenBtn").addEventListener("click", () => goAuth("signup"));
+      $("switchAccountBtn").addEventListener("click", switchAccountModal);
+    }
 
-        document.getElementById('reg-password-submit-btn').addEventListener('click', () => {
-            const inputCode = document.getElementById('reg-pass-input').value.trim();
-            const errBox = document.getElementById('register-password-error');
-            errBox.style.display = 'none';
+    function goAuth(mode, prefillName = "") {
+      closeModal();
+      const user = getCurrentUser();
+      if (user) addLog(`Went to ${mode} screen`);
+      state.currentUserId = null;
+      saveState("");
+      showAuthForm(mode, prefillName);
+    }
 
-            if (inputCode !== "jeremearcadee") {
-                errBox.style.display = 'block';
-                return;
-            }
+    function switchAccountModal() {
+      const current = getCurrentUser();
+      const rows = state.users
+        .filter((user) => user.active && user.id !== current?.id)
+        .map((user) => `
+          <div class="list-row">
+            <span>${escapeHtml(user.name)} ${user.role === "admin" ? "<small>(admin)</small>" : `<small>(${user.id.slice(0, 6)})</small>`}</span>
+            <button class="secondary" data-switch-name="${escapeHtml(user.name)}">Use Login</button>
+          </div>
+        `).join("") || `<p class="muted">No other active accounts are saved yet.</p>`;
+      openModal("Switch Account", `
+        <div class="settings-grid">
+          <section class="admin-section">
+            <h3>Add or Switch</h3>
+            <div class="controls">
+              <button id="switchLoginBtn" class="secondary" type="button">Login Another Account</button>
+              <button id="switchSignupBtn" class="primary" type="button">Add Account</button>
+            </div>
+          </section>
+          <section class="admin-section">
+            <h3>Saved Accounts</h3>
+            <div class="list">${rows}</div>
+          </section>
+        </div>
+      `);
+      $("switchLoginBtn").addEventListener("click", () => goAuth("login"));
+      $("switchSignupBtn").addEventListener("click", () => goAuth("signup"));
+      $("modalBody").querySelectorAll("[data-switch-name]").forEach((btn) => {
+        btn.addEventListener("click", () => goAuth("login", btn.dataset.switchName));
+      });
+    }
 
-            let accountKey = registrationInProgress.name.toLowerCase();
-            registeredProfilesDatabase[accountKey] = {
-                name: registrationInProgress.name,
-                grade: registrationInProgress.grade,
-                password: "jeremearcadee", 
-                credits: 100, 
-                highscores: { dino: 0, ninja: 0, clicker: 0, catcher: 0, tetris: 0, pong: 0, snake: 0, invader: 0, flappy: 0, breakout: 0 },
-                unlockedGames: ['dino', 'ninja', 'clicker', 'catcher', 'tetris']
-            };
+    async function codeModal() {
+      let code = "";
+      try {
+        const response = await fetch(location.href);
+        code = await response.text();
+      } catch {
+        code = "<!doctype html>\n" + document.documentElement.outerHTML;
+      }
+      openModal("Code", `
+        <div class="settings-grid">
+          <p class="muted">This is an HTML file with CSS and JavaScript inside it. Select the text below if you want to paste it into a compiler.</p>
+          <textarea id="codeViewer" class="code-viewer" readonly>${escapeHtml(code)}</textarea>
+          <div class="controls">
+            <button id="selectCodeBtn" class="primary" type="button">Select All</button>
+          </div>
+        </div>
+      `);
+      $("selectCodeBtn").addEventListener("click", () => {
+        $("codeViewer").focus();
+        $("codeViewer").select();
+        toast("Code selected.");
+      });
+    }
 
-            saveApplicationMasterDatabase();
-            pushTerminalSystemLog(`Registered user profile: ${registrationInProgress.name} using system keycode.`);
-            showToast("Account registration approved!");
-            
-            document.getElementById('reg-name-input').value = "";
-            document.getElementById('reg-pass-input').value = "";
-            navigateTo('login-screen');
-        });
+    function adminModal(type) {
+      if (!isAdmin()) return;
+      if (type === "leaderboard") {
+        const rows = state.users
+          .filter((user) => user.role !== "admin" && user.active)
+          .sort((a, b) => b.credits - a.credits)
+          .map((user, index) => `<div class="list-row"><span>${index + 1}. ${escapeHtml(user.name)} <small>(${user.id.slice(0, 6)})</small></span><b>${user.credits} credits</b></div>`)
+          .join("") || `<p class="muted">No normal users yet.</p>`;
+        openModal("Credits Leaderboard", `<div class="list">${rows}</div>`);
+      }
+      if (type === "logs") {
+        const rows = state.logs.map((log) => `<div class="list-row"><span><b>${escapeHtml(log.time)}</b><br>${escapeHtml(log.user)}: ${escapeHtml(log.message)}</span></div>`).join("") || `<p class="muted">No logs yet.</p>`;
+        openModal("Logs", `<div class="list">${rows}</div>`);
+      }
+      if (type === "accounts") {
+        const rows = state.users
+          .filter((user) => user.role !== "admin")
+          .map((user) => `
+            <div class="list-row">
+              <span>${escapeHtml(user.name)} <small>(${user.id.slice(0, 6)})</small><br>Status: ${user.active ? "Active" : "Deactivated"}</span>
+              <div class="controls">
+                <button class="${user.active ? "secondary" : "primary"}" data-toggle-account="${user.id}" data-next-active="${user.active ? "false" : "true"}" type="button">${user.active ? "Deactivate" : "Reactivate"}</button>
+                <button class="danger" data-delete-account="${user.id}" type="button">Delete</button>
+              </div>
+            </div>
+          `).join("") || `<p class="muted">No normal accounts yet.</p>`;
+        openModal("Account Deactivations", `<div class="list">${rows}</div>`);
+        $("modalBody").querySelectorAll("[data-toggle-account]").forEach((btn) => btn.addEventListener("click", () => {
+          const account = state.users.find((user) => user.id === btn.dataset.toggleAccount && user.role !== "admin");
+          if (!account) return;
+          const nextActive = btn.dataset.nextActive === "true";
+          const action = nextActive ? "reactivate" : "deactivate";
+          confirmModal("Confirm Account Change", `Are you sure you want to ${action} ${account.name}?`, nextActive ? "Reactivate Account" : "Deactivate Account", () => {
+            account.active = nextActive;
+            addLog(`Admin ${nextActive ? "reactivated" : "deactivated"} account ${account.id.slice(0, 6)}`);
+            saveState("");
+            toast(`Account ${nextActive ? "reactivated" : "deactivated"}.`);
+            adminModal("accounts");
+          });
+        }));
+        $("modalBody").querySelectorAll("[data-delete-account]").forEach((btn) => btn.addEventListener("click", () => {
+          const account = state.users.find((user) => user.id === btn.dataset.deleteAccount && user.role !== "admin");
+          if (!account) return;
+          confirmModal("Confirm Delete", `Are you sure you want to delete ${account.name}? This removes that saved account from this browser.`, "Delete Account", () => {
+            state.users = state.users.filter((user) => user.id !== btn.dataset.deleteAccount || user.role === "admin");
+            addLog(`Admin deleted account ${btn.dataset.deleteAccount.slice(0, 6)}`);
+            saveState("");
+            toast("Account deleted.");
+            adminModal("accounts");
+          });
+        }));
+      }
+    }
 
-        document.getElementById('login-submit-btn').addEventListener('click', () => {
-            const inputName = document.getElementById('login-name-input').value.trim();
-            const inputPass = document.getElementById('login-pass-input').value.trim();
-            const errBox = document.getElementById('login-error');
-            errBox.style.display = 'none';
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
 
-            let accountKey = inputName.toLowerCase();
-            let targetAccount = registeredProfilesDatabase[accountKey];
+    function signup(event) {
+      event.preventDefault();
+      const name = formatName($("signupName").value);
+      const password = $("signupPassword").value;
+      if (!name || !password) return;
+      if (canonicalName(name) === canonicalName(ADMIN_NAME)) {
+        toast("That name is reserved for the built-in admin account.");
+        return;
+      }
+      const user = createUser(name, password);
+      state.users.push(user);
+      state.currentUserId = user.id;
+      addLog("Signed up");
+      saveState("");
+      $("signupForm").reset();
+      enterApp();
+    }
 
-            if (accountKey === 'admin') {
-                if (inputPass === "jerethebest9142") {
-                    isAdminModeActive = true;
-                    activeLoggedUserKey = 'admin';
-                    userCredits = Infinity;
-                    highscores = targetAccount.highscores;
-                    GAMES_MANIFEST = JSON.parse(JSON.stringify(MASTER_BLUEPRINT_MANIFEST));
-                    GAMES_MANIFEST.forEach(g => g.unlocked = true);
+    function login(event) {
+      event.preventDefault();
+      const name = canonicalName($("loginName").value);
+      const password = $("loginPassword").value;
+      const matches = state.users.filter((user) => canonicalName(user.name) === name && user.password === password && user.active);
+      if (!matches.length) {
+        toast("Login failed. Check the name, password, or account status.");
+        return;
+      }
+      state.currentUserId = matches[0].id;
+      addLog("Logged in");
+      saveState("");
+      $("loginForm").reset();
+      enterApp();
+    }
 
-                    pushTerminalSystemLog("Global Master Administrator security verification successful.");
-                    showToast("Admin access approved.");
-                    renderAdminDashboardProfiles();
-                    navigateTo('admin-dashboard-screen');
-                    return;
-                }
-            } 
-            else if (targetAccount && inputPass === "jeremearcadee") {
-                isAdminModeActive = false;
-                activeLoggedUserKey = accountKey;
-                userDataProfile.name = targetAccount.name;
-                userDataProfile.grade = targetAccount.grade;
-                userCredits = targetAccount.credits;
-                highscores = targetAccount.highscores;
+    function enterApp() {
+      renderGames();
+      renderLessons();
+      renderApp();
+      showView("homeView");
+      showScreen("appScreen");
+    }
 
-                GAMES_MANIFEST = JSON.parse(JSON.stringify(MASTER_BLUEPRINT_MANIFEST));
-                GAMES_MANIFEST.forEach(g => {
-                    g.unlocked = targetAccount.unlockedGames.includes(g.id);
-                });
+    function logout() {
+      const user = getCurrentUser();
+      if (user) addLog("Logged out");
+      state.currentUserId = null;
+      saveState("");
+      showAuthForm("login");
+      toast("Logged out. Progress saved.");
+    }
 
-                document.getElementById('welcome-banner').innerText = `${userDataProfile.name} (${userDataProfile.grade})`;
-                pushTerminalSystemLog(`User workspace context session established: ${userDataProfile.name}`);
-                showToast(`Welcome back, ${userDataProfile.name}!`);
-                navigateTo('hub-screen');
-                return;
-            }
-            
-            errBox.style.display = 'block';
-        });
+    function startGame(gameId, options = {}) {
+      const starter = {
+        flappy: startFlappy,
+        tap: startTap,
+        fruit: startFruit,
+        dino: startDino,
+        pacman: startPacman,
+        bomb: startBomb,
+        fishing: startFishing,
+        tetris: startTetris,
+        blockblast: startBlockBlast,
+        chess: startChess
+      }[gameId];
+      const game = games.find((item) => item.id === gameId);
+      const boot = () => {
+        stopGameLoop();
+        currentGameLoop = starter($("gameCanvas"), $("gameInfo"), (score) => completeGame(score), options);
+      };
+      $("restartGameBtn").onclick = boot;
+      if (gameId === "chess") {
+        $("restartGameBtn").onclick = () => {
+          if (!spendCredits(game.play)) {
+            toast(`Restarting Chess costs ${game.play} credits.`);
+            return;
+          }
+          addLog("Restarted Chess");
+          saveState("");
+          renderApp();
+          boot();
+        };
+      }
+      $("finishGameBtn").onclick = () => {
+        stopGameLoop();
+        completeGame(Number($("gameInfo").dataset.score || 0));
+      };
+      boot();
+      $("modalTitle").textContent = game.name;
+    }
 
-        function renderAdminDashboardProfiles() {
-            const container = document.getElementById('admin-accounts-list');
-            container.innerHTML = "";
-            
-            Object.keys(registeredProfilesDatabase).forEach(key => {
-                const acc = registeredProfilesDatabase[key];
-                const card = document.createElement('div');
-                card.className = "game-item";
-                card.style.borderColor = (key === 'admin') ? 'var(--purple-color)' : '#334155';
-                
-                let creditsLabel = (key === 'admin') ? "∞" : acc.credits;
-                let actionsColumnHTML = (key === 'admin') ? 
-                    `<span style="color:var(--purple-color); font-size:12px; font-weight:bold;">SYSTEM IMMUNE</span>` : 
-                    `<button class="action-btn delete" onclick="adminDeleteAccountTarget('${key}')">Drop Profile</button>`;
+    function getCanvasKit(canvas, info, done) {
+      const ctx = canvas.getContext("2d");
+      let raf = 0;
+      let running = true;
+      let score = 0;
+      const keys = {};
+      const setScore = (value, label = "Score") => {
+        score = Math.max(0, Math.floor(value));
+        info.dataset.score = score;
+        info.textContent = `${label}: ${score}`;
+      };
+      const clear = (fill = "#091827") => {
+        ctx.fillStyle = fill;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      };
+      const keyDown = (event) => { keys[event.key] = true; };
+      const keyUp = (event) => { keys[event.key] = false; };
+      window.addEventListener("keydown", keyDown);
+      window.addEventListener("keyup", keyUp);
+      const stop = () => {
+        running = false;
+        cancelAnimationFrame(raf);
+        window.removeEventListener("keydown", keyDown);
+        window.removeEventListener("keyup", keyUp);
+        canvas.onclick = null;
+        canvas.onpointerdown = null;
+        canvas.onpointermove = null;
+        canvas.onpointerup = null;
+        canvas.onpointerleave = null;
+      };
+      const finish = () => {
+        if (!running) return;
+        stop();
+        done(score);
+      };
+      return { ctx, keys, setScore, clear, finish, stop, loop: (fn) => {
+        const tick = (time) => {
+          if (!running) return;
+          fn(time);
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      }};
+    }
 
-                card.innerHTML = `
-                    <div class="game-details">
-                        <h4 style="color:${(key === 'admin') ? 'var(--purple-color)' : '#fff'}">${acc.name}</h4>
-                        <p>Grade Target: ${acc.grade} | Keycode Validation: <span style="font-family:monospace; color:var(--gold-color);">${acc.password}</span></p>
-                        <div class="highscore-tag">Economy Liquidity: 🪙 ${creditsLabel} Credits</div>
-                    </div>
-                    <div>${actionsColumnHTML}</div>
-                `;
-                container.appendChild(card);
-            });
+    function startFlappy(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      const bird = { x: 120, y: 220, v: 0 };
+      const pipes = [];
+      let frames = 0;
+      kit.setScore(0);
+      const flap = () => { bird.v = -8.5; };
+      canvas.onpointerdown = flap;
+      window.onkeydown = (event) => { if (event.key === " ") flap(); };
+      kit.loop(() => {
+        frames++;
+        bird.v += 0.42;
+        bird.y += bird.v;
+        if (frames % 96 === 0) {
+          const gapY = 80 + Math.random() * 230;
+          pipes.push({ x: canvas.width, gapY, passed: false });
         }
-
-        function adminDeleteAccountTarget(profileKey) {
-            if(profileKey === 'admin') return;
-            const targetName = registeredProfilesDatabase[profileKey].name;
-            if(confirm(`Confirm administrative command to permanently delete account: "${targetName}"?`)) {
-                delete registeredProfilesDatabase[profileKey];
-                saveApplicationMasterDatabase();
-                pushTerminalSystemLog(`Administrative force-dropped account profile records: ${targetName}`);
-                renderAdminDashboardProfiles();
-                showToast("Account deleted successfully.");
-            }
+        pipes.forEach((pipe) => pipe.x -= 3.1);
+        kit.clear("#102640");
+        kit.ctx.fillStyle = "#8fc4ff";
+        kit.ctx.fillRect(0, 365, canvas.width, 75);
+        kit.ctx.fillStyle = "#d7b47a";
+        kit.ctx.beginPath();
+        kit.ctx.arc(bird.x, bird.y, 16, 0, Math.PI * 2);
+        kit.ctx.fill();
+        kit.ctx.fillStyle = "#2b9a66";
+        for (const pipe of pipes) {
+          kit.ctx.fillRect(pipe.x, 0, 54, pipe.gapY - 65);
+          kit.ctx.fillRect(pipe.x, pipe.gapY + 65, 54, canvas.height);
+          const hitX = bird.x + 14 > pipe.x && bird.x - 14 < pipe.x + 54;
+          const hitY = bird.y - 14 < pipe.gapY - 65 || bird.y + 14 > pipe.gapY + 65;
+          if (hitX && hitY) kit.finish();
+          if (!pipe.passed && pipe.x + 54 < bird.x) {
+            pipe.passed = true;
+            kit.setScore(Number(info.dataset.score || 0) + 5);
+          }
         }
+        if (bird.y > 365 || bird.y < 0) kit.finish();
+      });
+      return () => {
+        window.onkeydown = null;
+        kit.stop();
+      };
+    }
 
-        document.getElementById('admin-logout-btn').addEventListener('click', () => {
-            isAdminModeActive = false;
-            activeLoggedUserKey = null;
-            document.getElementById('login-name-input').value = "";
-            document.getElementById('login-pass-input').value = "";
-            pushTerminalSystemLog("Administrative workspace sessions closed cleanly.");
-            navigateTo('splash-screen');
-        });
-
-        document.getElementById('nav-settings-btn').addEventListener('click', () => navigateTo('settings-screen'));
-        document.getElementById('exit-settings-btn').addEventListener('click', () => navigateTo('hub-screen'));
-        
-        document.getElementById('delete-own-account-btn').addEventListener('click', () => {
-            if(!activeLoggedUserKey || activeLoggedUserKey === 'admin') return;
-            if(confirm("CRITICAL PROTOCOL: Are you absolutely sure you want to delete your account? This actions wipes all progress and cannot be undone!")) {
-                const legacyName = userDataProfile.name;
-                delete registeredProfilesDatabase[activeLoggedUserKey];
-                activeLoggedUserKey = null;
-                saveApplicationMasterDatabase();
-                
-                pushTerminalSystemLog(`User self-deleted their active profile container: ${legacyName}`);
-                alert("Your account profile workspace records have been safely detached.");
-                location.reload();
-            }
-        });
-
-        function renderEconomyLeaderboards() {
-            const richBox = document.getElementById('leaderboard-high-rich');
-            const poorBox = document.getElementById('leaderboard-low-poor');
-            
-            let accountArrays = Object.keys(registeredProfilesDatabase)
-                .filter(k => k !== 'admin')
-                .map(k => registeredProfilesDatabase[k]);
-
-            let richSorted = [...accountArrays].sort((a,b) => b.credits - a.credits).slice(0, 3);
-            richBox.innerHTML = richSorted.length ? "" : "<div style='font-size:11px; color:#64748b;'>No users tracked.</div>";
-            richSorted.forEach((user, idx) => {
-                richBox.innerHTML += `
-                    <div class="board-row">
-                        <span style="font-weight:bold; color:var(--gold-color);">${idx+1}. ${user.name}</span>
-                        <span style="color:#cbd5e1;">🪙${user.credits}</span>
-                    </div>
-                `;
-            });
-
-            let poorSorted = [...accountArrays].sort((a,b) => a.credits - b.credits).slice(0, 3);
-            poorBox.innerHTML = poorSorted.length ? "" : "<div style='font-size:11px; color:#64748b;'>No users tracked.</div>";
-            poorSorted.forEach((user, idx) => {
-                poorBox.innerHTML += `
-                    <div class="board-row">
-                        <span style="font-weight:bold; color:var(--error-color);">${idx+1}. ${user.name}</span>
-                        <span style="color:#cbd5e1;">🪙${user.credits}</span>
-                    </div>
-                `;
-            });
+    function startTap(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      let target = { x: 80, y: 0, r: 28, speed: 2.2 };
+      let missed = 0;
+      kit.setScore(0);
+      const reset = () => {
+        target = { x: 40 + Math.random() * (canvas.width - 80), y: -30, r: Math.max(14, 28 - Number(info.dataset.score || 0) / 10), speed: target.speed + 0.22 };
+      };
+      canvas.onpointerdown = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+        if (Math.hypot(x - target.x, y - target.y) <= target.r + 4) {
+          kit.setScore(Number(info.dataset.score || 0) + 4);
+          reset();
         }
-
-        function saveApplicationMasterDatabase() {
-            if (activeLoggedUserKey && activeLoggedUserKey !== 'admin' && registeredProfilesDatabase[activeLoggedUserKey]) {
-                registeredProfilesDatabase[activeLoggedUserKey].credits = userCredits;
-                registeredProfilesDatabase[activeLoggedUserKey].highscores = highscores;
-                registeredProfilesDatabase[activeLoggedUserKey].unlockedGames = GAMES_MANIFEST.filter(g => g.unlocked).map(g => g.id);
-            }
-            localStorage.setItem('arcade_accounts_db_v5', JSON.stringify(registeredProfilesDatabase));
+      };
+      kit.loop(() => {
+        target.y += target.speed;
+        if (target.y - target.r > canvas.height) {
+          missed++;
+          reset();
+          if (missed >= 3) kit.finish();
         }
+        kit.clear("#101722");
+        kit.ctx.fillStyle = "#d7b47a";
+        kit.ctx.beginPath();
+        kit.ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
+        kit.ctx.fill();
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "700 18px sans-serif";
+        kit.ctx.fillText(`Misses: ${missed}/3`, 18, 28);
+      });
+      return kit.stop;
+    }
 
-        function loadApplicationMasterDatabase() {
-            const savedRaw = localStorage.getItem('arcade_accounts_db_v5');
-            if (savedRaw) {
-                registeredProfilesDatabase = JSON.parse(savedRaw);
-            } else {
-                registeredProfilesDatabase = {};
-            }
-        }
-
-        function navigateTo(targetId) {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById(targetId).style.display = 'block';
-            
-            let displayCredits = isAdminModeActive ? "∞" : userCredits;
-            document.getElementById('hub-credits').innerText = displayCredits;
-            document.getElementById('learn-hub-credits').innerText = displayCredits;
-            document.getElementById('learn-credits').innerText = displayCredits;
-            document.getElementById('catalog-credits').innerText = displayCredits;
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast-banner');
-            t.innerText = msg; t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 2500);
-        }
-
-        setInterval(() => {
-            if (currentActiveGameId && !isEnginePaused && !isAdminModeActive && !document.getElementById('math-disruption-overlay').style.display === 'flex') {
-                sessionTimer++;
-                if (sessionTimer >= 600 && !healthAlertTriggered) {
-                    healthAlertTriggered = true;
-                    alert("hey enough learn again");
-                    quitGameEngine();
-                    navigateTo('learn-hub-screen');
-                }
-            }
-        }, 1000);
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            saveApplicationMasterDatabase();
-            pushTerminalSystemLog(`User context closed session: ${userDataProfile.name}`);
-            activeLoggedUserKey = null;
-            userCredits = 0;
-            document.getElementById('login-name-input').value = "";
-            document.getElementById('login-pass-input').value = "";
-            navigateTo('splash-screen');
-        });
-
-        document.getElementById('nav-play-btn').addEventListener('click', () => { 
-            renderCatalogList(); 
-            renderEconomyLeaderboards();
-            navigateTo('catalog-screen'); 
-        });
-        document.getElementById('nav-learn-hub-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
-        
-        function routeToWarning(topic, label) {
-            selectedMathTopic = topic;
-            document.getElementById('math-classroom-title').innerText = label;
-            navigateTo('math-warning-screen');
-        }
-        document.getElementById('topic-ratio-btn').addEventListener('click', () => routeToWarning('Ratio', 'Ratio Workspace'));
-        document.getElementById('topic-perimeter-btn').addEventListener('click', () => routeToWarning('Perimeter', 'Perimeter Calculations'));
-        document.getElementById('topic-area-btn').addEventListener('click', () => routeToWarning('Area', 'Area Determinations'));
-
-        document.getElementById('exit-learn-hub-btn').addEventListener('click', () => navigateTo('hub-screen'));
-        document.getElementById('cancel-math-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
-        document.getElementById('start-math-btn').addEventListener('click', () => { 
-            document.getElementById('math-classroom-grade').innerText = userDataProfile.grade;
-            renderStudyChallenge(); navigateTo('learn-screen'); 
-        });
-        document.getElementById('exit-learn-btn').addEventListener('click', () => navigateTo('learn-hub-screen'));
-        document.getElementById('exit-catalog-btn').addEventListener('click', () => navigateTo('hub-screen'));
-        document.getElementById('quit-arena-btn').addEventListener('click', () => quitGameEngine());
-        document.getElementById('modal-close-run-btn').addEventListener('click', () => {
-            document.getElementById('game-over-overlay').style.display = 'none';
-            quitGameEngine();
-        });
-
-        document.getElementById('pause-afk-btn').addEventListener('click', () => {
-            isEnginePaused = !isEnginePaused;
-            document.getElementById('pause-afk-btn').innerText = isEnginePaused ? "Resume Simulation" : "Pause Simulation";
-        });
-
-        function generateMathProblem() {
-            let q = "", ans = "", opts = [];
-            let factor = Math.floor(Math.random() * 4) + 2;
-            let valA = Math.floor(Math.random() * 6) + 3;
-            let valB = Math.floor(Math.random() * 6) + 3;
-
-            if (selectedMathTopic === 'Ratio') {
-                if(Math.random() > 0.5) {
-                    q = `Simplify the following ratio: ${valA * factor} : ${valB * factor}`;
-                    ans = `${valA} : ${valB}`;
-                    opts = [ans, `${valA+1} : ${valB}`, `${valA} : ${valB+1}`, `${valA*2} : ${valB}`];
-                } else {
-                    let product = valB * factor * 2;
-                    q = `Solve for X in the linear proportion: ${valA} : ${valB} = ${valA*2} : X`;
-                    ans = String(product);
-                    opts = [ans, String(product - 2), String(product + factor), String(product * 2)];
-                }
-            } else if (selectedMathTopic === 'Perimeter') {
-                let w = Math.floor(Math.random() * 8) + 4;
-                let h = Math.floor(Math.random() * 6) + 3;
-                let p = 2 * (w + h);
-                q = `A rectangle possesses a width of ${w}cm and a height of ${h}cm. Calculate its perimeter.`;
-                ans = String(p);
-                opts = [ans, String(w + h), String(p + 4), String(p - 2)];
-            } else if (selectedMathTopic === 'Area') {
-                let base = Math.floor(Math.random() * 7) + 5;
-                let height = Math.floor(Math.random() * 5) + 4;
-                let area = base * height;
-                q = `Determine the total area of a plane with a base dimension of ${base}m and a height of ${height}m.`;
-                ans = String(area);
-                opts = [ans, String(base + height), String(area + base), String(area - 5)];
-            }
-
-            opts = [...new Set(opts)].map(String);
-            while(opts.length < 4) opts.push(String(parseInt(ans) + Math.floor(Math.random() * 12) + 1));
-            opts.sort(() => Math.random() - 0.5);
-            activeCorrectOptionIdx = opts.indexOf(String(ans));
-            return { q, opts };
-        }
-
-        function renderStudyChallenge() {
-            const screenPanel = document.getElementById('learn-screen');
-            screenPanel.style.backgroundColor = 'var(--panel-color)';
-            const data = generateMathProblem();
-            document.getElementById('study-box-display').innerText = data.q;
-            const optionsContainer = document.getElementById('study-options-container');
-            optionsContainer.innerHTML = ""; optionsContainer.style.pointerEvents = 'auto';
-
-            data.opts.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "nav-btn"; btn.style.padding = "14px"; btn.style.justifyContent = "center";
-                btn.innerText = opt;
-                btn.onclick = () => evaluateStudyAnswer(idx, screenPanel);
-                optionsContainer.appendChild(btn);
-            });
-        }
-
-        function evaluateStudyAnswer(selected, panel) {
-            document.getElementById('study-options-container').style.pointerEvents = 'none';
-            if (selected === activeCorrectOptionIdx) {
-                if(!isAdminModeActive) userCredits += 15;
-                panel.style.backgroundColor = '#166534'; 
-                document.getElementById('study-box-display').innerText = "Correct Response! Reward confirmed.";
-                pushTerminalSystemLog(`${userDataProfile.name} answered study lesson question CORRECTLY.`);
-            } else {
-                if(!isAdminModeActive) userCredits = Math.max(0, userCredits - 10);
-                panel.style.backgroundColor = '#991b1b'; 
-                document.getElementById('study-box-display').innerText = "Incorrect Response! Points deducted.";
-                pushTerminalSystemLog(`${userDataProfile.name} answered study lesson question INCORRECTLY.`);
-            }
-            document.getElementById('learn-credits').innerText = isAdminModeActive ? "∞" : userCredits;
-            saveApplicationMasterDatabase();
-            setTimeout(() => { renderStudyChallenge(); }, 1200);
-        }
-
-        function renderCatalogList() {
-            const container = document.getElementById('catalog-list-element');
-            container.innerHTML = "";
-            GAMES_MANIFEST.forEach((g) => {
-                const card = document.createElement('div'); card.className = "game-item";
-                let actionHTML = "";
-                if (g.unlocked || isAdminModeActive) {
-                    let costTag = isAdminModeActive ? "FREE" : "25¢";
-                    actionHTML = `<button class="action-btn play" onclick="launchGameEntry('${g.id}')">Launch (${costTag})</button>`;
-                } else {
-                    let affClass = (userCredits >= g.requiredUnlock) ? "affordable-btn" : "";
-                    actionHTML = `<button class="action-btn lock ${affClass}" onclick="unlockCatalogGame('${g.id}', ${g.requiredUnlock})">Unlock (${g.requiredUnlock}¢)</button>`;
-                }
-                card.innerHTML = `
-                    <div class="game-details">
-                        <h4>${g.name}</h4><p>${g.desc}</p>
-                        <div class="highscore-tag">Personal Record: ${highscores[g.id] || 0}</div>
-                    </div>
-                    <div>${actionHTML}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function unlockCatalogGame(id, cost) {
-            if(isAdminModeActive) return;
-            if(userCredits >= cost) {
-                userCredits -= cost;
-                const target = GAMES_MANIFEST.find(g => g.id === id);
-                if(target) target.unlocked = true;
-                saveApplicationMasterDatabase();
-                renderCatalogList();
-                document.getElementById('catalog-credits').innerText = userCredits;
-                pushTerminalSystemLog(`${userDataProfile.name} unlocked game matrix: ${id}`);
-            } else { showToast("Insufficient arcade balance!"); }
-        }
-
-        function triggerInGameMathDisruption() {
-            isEnginePaused = true;
-            const modal = document.getElementById('math-disruption-overlay');
-            const data = generateMathProblem();
-            
-            document.getElementById('modal-question-text').innerText = data.q;
-            const container = document.getElementById('modal-options-container');
-            container.innerHTML = "";
-            
-            data.opts.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "modal-opt-btn";
-                btn.innerText = opt;
-                btn.onclick = () => {
-                    const currentTime = Date.now();
-                    if (idx === activeCorrectOptionIdx) {
-                        showToast("Correct! Performance modifiers activated.");
-                        currentSpeedMultiplier = 1.7;
-                        invincibilityTimerActive = true;
-                        emergencyHazardsActive = false;
-                        modificationStateExpiryTime = currentTime + 5000;
-                        pushTerminalSystemLog(`In-Game Event: ${userDataProfile.name} solved disruption CORRECTLY.`);
-                    } else {
-                        score = Math.max(0, score - 15);
-                        showToast("Incorrect! Heavy hazard structural variance encountered.");
-                        currentSpeedMultiplier = 1.0;
-                        invincibilityTimerActive = false;
-                        emergencyHazardsActive = true;
-                        modificationStateExpiryTime = currentTime + 5000;
-                        pushTerminalSystemLog(`In-Game Event: ${userDataProfile.name} failed disruption challenge.`);
-                    }
-                    modal.style.display = 'none';
-                    gameCountdownClock = 20;
-                    isEnginePaused = false;
-                };
-                container.appendChild(btn);
-            });
-            modal.style.display = 'flex';
-        }
-
-        function triggerGameOverModal(message) {
-            isEnginePaused = true;
-            clearInterval(midGameMathInterval);
-            document.getElementById('game-over-message-text').innerText = message;
-            document.getElementById('game-over-overlay').style.display = 'flex';
-            pushTerminalSystemLog(`Run Concluded for ${userDataProfile.name}. Achieved Score: ${score}`);
-        }
-
-        function launchGameEntry(id) {
-            if(!isAdminModeActive) {
-                if(userCredits < 25) { showToast("A balance of 25 credits is required to enter this simulation!"); return; }
-                userCredits -= 25;
-            }
-            saveApplicationMasterDatabase();
-            
-            currentActiveGameId = id; score = 0; isEnginePaused = false; gameCountdownClock = 20; healthAlertTriggered = false;
-            currentSpeedMultiplier = 1.0; invincibilityTimerActive = false; emergencyHazardsActive = false;
-            
-            document.getElementById('arena-score').innerText = "0";
-            document.getElementById('arena-highscore').innerText = highscores[id] || 0;
-            document.getElementById('tetris-controls').style.display = (id === 'tetris') ? 'grid' : 'none';
-            document.getElementById('brick-balls-counter').style.display = (id === 'breakout') ? 'block' : 'none';
-            
-            document.getElementById('math-disruption-overlay').style.display = 'none';
-            document.getElementById('game-over-overlay').style.display = 'none';
-            navigateTo('arena-screen');
-            initGameSubstate(id);
-
-            pushTerminalSystemLog(`${userDataProfile.name} launched arcade game: ${id}`);
-
-            clearInterval(midGameMathInterval);
-            midGameMathInterval = setInterval(() => {
-                if(!isEnginePaused && document.getElementById('math-disruption-overlay').style.display !== 'flex' && document.getElementById('game-over-overlay').style.display !== 'flex') {
-                    gameCountdownClock--;
-                    document.getElementById('game-math-ticker').innerText = `Next Event: ${gameCountdownClock}s`;
-                    if(gameCountdownClock <= 0) { triggerInGameMathDisruption(); }
-                }
-            }, 1000);
-
-            if(runFrameRequest) cancelAnimationFrame(runFrameRequest);
-            executeCoreEngineLoop();
-        }
-
-        function quitGameEngine() {
-            if(score > (highscores[currentActiveGameId] || 0)) highscores[currentActiveGameId] = score;
-            cancelAnimationFrame(runFrameRequest); clearInterval(midGameMathInterval);
-            document.getElementById('math-disruption-overlay').style.display = 'none';
-            document.getElementById('game-over-overlay').style.display = 'none';
-            currentActiveGameId = null;
-            saveApplicationMasterDatabase();
-            
-            if(isAdminModeActive) {
-                renderAdminDashboardProfiles();
-                navigateTo('admin-dashboard-screen');
-            } else {
-                renderCatalogList(); 
-                navigateTo('catalog-screen');
-            }
-        }
-
-        function executeCoreEngineLoop() {
-            if(!isEnginePaused) {
-                if (invincibilityTimerActive || emergencyHazardsActive) {
-                    if (Date.now() > modificationStateExpiryTime) {
-                        invincibilityTimerActive = false;
-                        emergencyHazardsActive = false;
-                        currentSpeedMultiplier = 1.0;
-                        showToast("Operational status returned to nominal metrics.");
-                    }
-                }
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                processGameTickAndGraphics();
-                document.getElementById('arena-score').innerText = score;
-            }
-            runFrameRequest = requestAnimationFrame(executeCoreEngineLoop);
-        }
-
-        function parseInputCoordinate(e) {
-            const rect = canvas.getBoundingClientRect();
-            const cx = e.touches ? e.touches[0].clientX : e.clientX;
-            const cy = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: ((cx - rect.left) / rect.width) * canvas.width, y: ((cy - rect.top) / rect.height) * canvas.height };
-        }
-
-        function onPointerStart(e) {
-            if(isEnginePaused) return;
-            pointer.isDown = true; const coords = parseInputCoordinate(e);
-            pointer.x = coords.x; pointer.y = coords.y; pointer.prevX = coords.x; pointer.prevY = coords.y;
-            if(currentActiveGameId === 'dino' && gameState.dino && gameState.dino.grounded) { gameState.dino.vy = -12.5; gameState.dino.grounded = false; }
-            if(currentActiveGameId === 'flappy' && gameState.bird) { gameState.bird.vy = -5.5; }
-        }
-
-        function onPointerMove(e) {
-            if(isEnginePaused || !pointer.isDown) return;
-            const coords = parseInputCoordinate(e);
-            pointer.prevX = pointer.x; pointer.prevY = pointer.y; pointer.x = coords.x; pointer.y = coords.y;
-        }
-
-        function onPointerEnd() { pointer.isDown = false; }
-
-        canvas.addEventListener('mousedown', onPointerStart);
-        canvas.addEventListener('mousemove', onPointerMove);
-        window.addEventListener('mouseup', onPointerEnd);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerStart(e); }, {passive:false});
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); }, {passive:false});
-        window.addEventListener('touchend', onPointerEnd);
-
-        function initGameSubstate(id) {
-            gameState = {};
-            if(id === 'dino') { gameState.dino = { y: 280, vy: 0, grounded: true }; gameState.hazards = []; gameState.spawnTimer = 0; }
-            else if(id === 'ninja') { gameState.targets = []; gameState.spawnTimer = 0; }
-            else if(id === 'clicker') { gameState.nodes = []; gameState.spawnTimer = 0; }
-            else if(id === 'catcher') { gameState.basketX = 160; gameState.items = []; gameState.spawnTimer = 0; }
-            else if(id === 'tetris') { gameState.grid = Array(20).fill().map(() => Array(10).fill(0)); spawnTetrisPiece(); gameState.dropTimer = 0; }
-            else if(id === 'pong') { gameState.ball = { x: 200, y: 190, vx: 3, vy: 3 }, gameState.p1Y = 140, gameState.p2Y = 140; }
-            else if(id === 'snake') { gameState.trail = [{x:10,y:10}]; gameState.dir = {x:1,y:0}; gameState.token = {x:5,y:5}; gameState.tickTimer = 0; }
-            else if(id === 'invader') { gameState.shipX = 180; gameState.fleet = []; gameState.bolts = []; gameState.spawnTimer = 0; for(let r=0; r<3; r++) { for(let c=0; c<6; c++) { gameState.fleet.push({x: 40 + c*50, y: 30 + r*30, alive: true}); } } }
-            else if(id === 'flappy') { gameState.bird = { y: 150, vy: 0 }; gameState.shafts = []; gameState.spawnTimer = 0; }
-            else if(id === 'breakout') { gameState.padX = 160; gameState.orb = { x: 200, y: 250, vx: 3, vy: -3, active: true }; gameState.bricks = []; for(let r=0; r<4; r++) { for(let c=0; c<6; c++) { gameState.bricks.push({ x: 15 + c*63, y: 40 + r*22, active: true }); } } gameState.lives = 3; document.getElementById('brick-balls-counter').innerText = `Balls Remaining: ${gameState.lives}`; }
-        }
-
-        function processGameTickAndGraphics() {
-            let speed = currentSpeedMultiplier;
-            if(emergencyHazardsActive) speed *= 0.5;
-
-            if (currentActiveGameId === 'dino') {
-                ctx.fillStyle = '#334155'; ctx.fillRect(0, 310, 400, 70);
-                let hero = gameState.dino;
-                if(!hero.grounded) { hero.vy += 0.6; hero.y += hero.vy; if(hero.y >= 280) { hero.y = 280; hero.vy = 0; hero.grounded = true; } }
-                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(40, hero.y, 30, 30);
-                gameState.spawnTimer++;
-                let rawInterval = Math.max(35, 75 - Math.floor(score/3));
-                if(gameState.spawnTimer > rawInterval) { gameState.hazards.push({ x: 400, w: 15 + Math.random()*15 }); gameState.spawnTimer = 0; }
-                gameState.hazards.forEach((hz, idx) => {
-                    hz.x -= (4 + (score * 0.05)) * speed;
-                    ctx.fillStyle = emergencyHazardsActive ? '#ef4444' : '#f43f5e';
-                    ctx.fillRect(hz.x, 285, hz.w, 25);
-                    if(hz.x < -30) { gameState.hazards.splice(idx, 1); score++; }
-                    if(!invincibilityTimerActive && hz.x < 70 && hz.x + hz.w > 40 && hero.y > 255) { triggerGameOverModal(`Collision detected! You accumulated ${score} points.`); }
-                });
-            }
-            else if(currentActiveGameId === 'ninja') {
-                gameState.spawnTimer++;
-                if(gameState.spawnTimer > 40) { gameState.targets.push({ x: 50 + Math.random()*300, y: 380, vy: -6 - Math.random()*4, sliced: false, r: 18 }); gameState.spawnTimer = 0; }
-                gameState.targets.forEach((tg, idx) => {
-                    tg.vy += 0.15; tg.y += tg.vy * speed;
-                    ctx.beginPath(); ctx.arc(tg.x, tg.y, tg.r, 0, Math.PI*2);
-                    ctx.fillStyle = tg.sliced ? 'rgba(56, 189, 248, 0.2)' : 'var(--gold-color)'; ctx.fill();
-                    if(pointer.isDown && !tg.sliced) {
-                        let dist = Math.hypot(pointer.x - tg.x, pointer.y - tg.y);
-                        if(dist < tg.r + 10) { tg.sliced = true; score += 2; }
-                    }
-                    if(tg.y > 400) { gameState.targets.splice(idx,1); if(!tg.sliced && !invincibilityTimerActive) score = Math.max(0, score - 1); }
-                });
-                if(pointer.isDown) { ctx.beginPath(); ctx.moveTo(pointer.prevX, pointer.prevY); ctx.lineTo(pointer.x, pointer.y); ctx.strokeStyle = 'var(--accent-color)'; ctx.lineWidth = 4; ctx.stroke(); }
-            }
-            else if(currentActiveGameId === 'clicker') {
-                gameState.spawnTimer++;
-                if(gameState.spawnTimer > 35) { gameState.nodes.push({ x: Math.random()*370, y: -20, r: 16, s: 1.5 + Math.random()*2 }); gameState.spawnTimer = 0; }
-                gameState.nodes.forEach((nd, idx) => {
-                    nd.y += nd.s * speed;
-                    ctx.beginPath(); ctx.arc(nd.x, nd.y, nd.r, 0, Math.PI*2);
-                    ctx.fillStyle = 'var(--purple-color)'; ctx.fill();
-                    if(pointer.isDown) {
-                        let dist = Math.hypot(pointer.x - nd.x, pointer.y - nd.y);
-                        if(dist < nd.r + 12) { gameState.nodes.splice(idx, 1); score += 5; pointer.isDown = false; return; }
-                    }
-                    if(nd.y > 390) { gameState.nodes.splice(idx,1); if(!invincibilityTimerActive) triggerGameOverModal(`An anomaly broke through the perimeter defenses! Final score: ${score}`); }
-                });
-            }
-            else if(currentActiveGameId === 'catcher') {
-                if(pointer.isDown) { gameState.basketX = pointer.x - 35; if(gameState.basketX < 0) gameState.basketX = 0; if(gameState.basketX > 330) gameState.basketX = 330; }
-                ctx.fillStyle = 'var(--success-color)'; ctx.fillRect(gameState.basketX, 340, 70, 15);
-                gameState.spawnTimer++;
-                if(gameState.spawnTimer > 45) { gameState.items.push({ x: 20 + Math.random()*360, y: -10, s: 2.5 + Math.random()*2 }); gameState.spawnTimer = 0; }
-                gameState.items.forEach((it, idx) => {
-                    it.y += it.s * speed;
-                    ctx.fillStyle = 'var(--gold-color)'; ctx.beginPath(); ctx.arc(it.x, it.y, 10, 0, Math.PI*2); ctx.fill();
-                    if(it.y > 335 && it.x > gameState.basketX && it.x < gameState.basketX + 70) { gameState.items.splice(idx, 1); score += 10; }
-                    else if(it.y > 390) { gameState.items.splice(idx, 1); if(!invincibilityTimerActive) score = Math.max(0, score - 5); }
-                });
-            }
-            else if(currentActiveGameId === 'tetris') {
-                ctx.fillStyle = '#0f172a'; ctx.fillRect(100, 10, 200, 360);
-                gameState.dropTimer += speed;
-                if(gameState.dropTimer > 30) { moveTetrisDown(); gameState.dropTimer = 0; }
-                for(let r=0; r<20; r++) { for(let c=0; c<10; c++) { if(gameState.grid[r][c]) { ctx.fillStyle = gameState.grid[r][c]; ctx.fillRect(100 + c*20, 10 + r*18, 19, 17); } } }
-                if(gameState.current) {
-                    ctx.fillStyle = COLORS[gameState.currentType];
-                    gameState.current.forEach(b => { ctx.fillRect(100 + (gameState.curX + b.x)*20, 10 + (gameState.curY + b.y)*18, 19, 17); });
-                }
-            }
-            else if(currentActiveGameId === 'pong') {
-                let b = gameState.ball; b.x += b.vx * speed; b.y += b.vy * speed;
-                if(b.y < 10 || b.y > 370) b.vy = -b.vy;
-                if(pointer.isDown) { gameState.p1Y = pointer.y - 35; }
-                let targetAI = b.y - 35; gameState.p2Y += (targetAI - gameState.p2Y) * 0.08;
-                ctx.fillStyle = 'white'; ctx.fillRect(15, gameState.p1Y, 12, 70); ctx.fillRect(375, gameState.p2Y, 12, 70);
-                ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, Math.PI*2); ctx.fill();
-                if(b.vx < 0 && b.x < 32 && b.y > gameState.p1Y && b.y < gameState.p1Y + 70) { b.vx = -b.vx * 1.05; score += 2; }
-                if(b.vx > 0 && b.x > 368 && b.y > gameState.p2Y && b.y < gameState.p2Y + 70) { b.vx = -b.vx * 1.05; }
-                if(b.x < 0) { if(!invincibilityTimerActive) { triggerGameOverModal(`AI component defeated your perimeter paddle. Total score: ${score}`); } else { b.vx = -b.vx; b.x = 10; } }
-                if(b.x > 400) { score += 10; b.x = 200; b.y = 190; b.vx = -3; }
-            }
-            else if(currentActiveGameId === 'snake') {
-                gameState.tickTimer += speed;
-                if(gameState.tickTimer > 12) {
-                    gameState.tickTimer = 0;
-                    let head = { x: gameState.trail[0].x + gameState.dir.x, y: gameState.trail[0].y + gameState.dir.y };
-                    if(pointer.isDown) {
-                        let dx = pointer.x - (head.x*20); let dy = pointer.y - (head.y*19);
-                        if(Math.abs(dx) > Math.abs(dy)) { gameState.dir = { x: dx > 0 ? 1 : -1, y: 0 }; }
-                        else { gameState.dir = { x: 0, y: dy > 0 ? 1 : -1 }; }
-                    }
-                    gameState.trail.unshift(head);
-                    if(head.x === gameState.token.x && head.y === gameState.token.y) { score += 15; gameState.token = { x: Math.floor(Math.random()*19), y: Math.floor(Math.random()*19) }; }
-                    else { gameState.trail.pop(); }
-                    if(head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) { if(!invincibilityTimerActive) triggerGameOverModal(`Impacted perimeter walls! Final score: ${score}`); else { head.x = (head.x + 20) % 20; head.y = (head.y + 20) % 20; } }
-                }
-                ctx.fillStyle = 'var(--success-color)'; gameState.trail.forEach(pt => ctx.fillRect(pt.x*20, pt.y*19, 18, 17));
-                ctx.fillStyle = 'var(--error-color)'; ctx.fillRect(gameState.token.x*20, gameState.token.y*19, 18, 17);
-            }
-            else if(currentActiveGameId === 'invader') {
-                if(pointer.isDown) { gameState.shipX = pointer.x - 20; }
-                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(gameState.shipX, 340, 40, 15);
-                gameState.spawnTimer++;
-                if(gameState.spawnTimer > 25) { gameState.bolts.push({x: gameState.shipX + 20, y: 330}); gameState.spawnTimer = 0; }
-                let anyAlive = false;
-                gameState.fleet.forEach(inv => {
-                    if(!inv.alive) return; anyAlive = true;
-                    ctx.fillStyle = 'white'; ctx.fillRect(inv.x, inv.y, 25, 18);
-                    if(Math.random() > 0.994 * (1/speed) && !isEnginePaused) { gameState.bolts.push({x: inv.x + 12, y: inv.y + 20, enemy: true}); }
-                    if(inv.y > 320 && !invincibilityTimerActive) { triggerGameOverModal("Invaders breached defensive frontlines!"); }
-                });
-                if(!anyAlive) { for(let r=0; r<3; r++) { for(let c=0; c<6; c++) { gameState.fleet.push({x: 40 + c*50, y: 30 + r*30, alive: true}); } } score += 50; }
-                gameState.bolts.forEach((bl, bIdx) => {
-                    bl.y += bl.enemy ? 3.5 * speed : -5 * speed;
-                    ctx.fillStyle = bl.enemy ? 'var(--error-color)' : 'var(--success-color)'; ctx.fillRect(bl.x, bl.y, 4, 10);
-                    if(!bl.enemy) {
-                        gameState.fleet.forEach(inv => {
-                            if(inv.alive && bl.x > inv.x && bl.x < inv.x + 25 && bl.y > inv.y && bl.y < inv.y + 18) { inv.alive = false; gameState.bolts.splice(bIdx,1); score += 10; }
-                        });
-                    } else {
-                        if(!invincibilityTimerActive && bl.x > gameState.shipX && bl.x < gameState.shipX + 40 && bl.y > 340 && bl.y < 355) { triggerGameOverModal(`Perimeter shield critically breached! Total score: ${score}`); }
-                    }
-                    if(bl.y < 0 || bl.y > 380) gameState.bolts.splice(bIdx, 1);
-                });
-            }
-            else if(currentActiveGameId === 'flappy') {
-                let b = gameState.bird; b.vy += 0.28; b.y += b.vy * speed;
-                ctx.fillStyle = 'var(--gold-color)'; ctx.fillRect(60, b.y, 24, 24);
-                if((b.y > 360 || b.y < 0) && !invincibilityTimerActive) { triggerGameOverModal(`Gravitational collision. Total score: ${score}`); }
-                gameState.spawnTimer++;
-                if(gameState.spawnTimer > 85) { let gap = 110; let topH = 40 + Math.random()*160; gameState.shafts.push({x:400, top:topH, bot:topH+gap, passed:false}); gameState.spawnTimer = 0; }
-                gameState.shafts.forEach((sh, idx) => {
-                    sh.x -= 2.2 * speed;
-                    ctx.fillStyle = '#1e293b'; ctx.fillRect(sh.x, 0, 50, sh.top); ctx.fillRect(sh.x, sh.bot, 50, 380 - sh.bot);
-                    if(!sh.passed && sh.x < 60) { sh.passed = true; score += 5; }
-                    if(!invincibilityTimerActive && sh.x < 84 && sh.x + 50 > 60 && (b.y < sh.top || b.y + 24 > sh.bot)) { triggerGameOverModal(`Impact inside matrix caverns! Final score: ${score}`); }
-                    if(sh.x < -60) gameState.shafts.splice(idx, 1);
-                });
-            }
-            else if(currentActiveGameId === 'breakout') {
-                let pad = gameState.padX; let ball = gameState.orb;
-                if(pointer.isDown) { gameState.padX = pointer.x - 40; if(gameState.padX < 0) gameState.padX = 0; if(gameState.padX > 320) gameState.padX = 320; }
-                ctx.fillStyle = 'var(--accent-color)'; ctx.fillRect(gameState.padX, 340, 80, 12);
-                if(ball.active) {
-                    ball.x += ball.vx * speed; ball.y += ball.vy * speed;
-                    if(ball.x < 8 || ball.x > 392) ball.vx = -ball.vx;
-                    if(ball.y < 8) ball.vy = -ball.vy;
-                    if(ball.vy > 0 && ball.y > 332 && ball.y < 342 && ball.x > gameState.padX && ball.x < gameState.padX + 80) { ball.vy = -ball.vy; }
-                    let activeBricks = 0;
-                    gameState.bricks.forEach(bk => {
-                        if(!bk.active) return; activeBricks++;
-                        ctx.fillStyle = 'var(--purple-color)'; ctx.fillRect(bk.x, bk.y, 55, 16);
-                        if(ball.x > bk.x && ball.x < bk.x + 55 && ball.y > bk.y && ball.y < bk.y + 16) { bk.active = false; ball.vy = -ball.vy; score += 10; }
-                    });
-                    if(activeBricks === 0) { score += 100; for(let r=0; r<4; r++) { for(let c=0; c<6; c++) { gameState.bricks.push({ x: 15 + c*63, y: 40 + r*22, active: true }); } } }
-                    if(ball.y > 380) {
-                        if (!invincibilityTimerActive) {
-                            gameState.lives--;
-                            document.getElementById('brick-balls-counter').innerText = `Balls Remaining: ${gameState.lives}`;
-                            if(gameState.lives <= 0) { triggerGameOverModal(`All active structural nodes depleted! Final score: ${score}`); }
-                            else { ball.x = 200; ball.y = 250; ball.vx = 3; ball.vy = -3; }
-                        } else { ball.vy = -ball.vy; ball.y = 370; }
-                    }
-                    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 7, 0, Math.PI*2); ctx.fill();
-                }
-            }
-        }
-
-        function spawnTetrisPiece() {
-            let rIdx = Math.floor(Math.random() * SHAPES.length);
-            gameState.currentType = rIdx;
-            gameState.current = [];
-            SHAPES[rIdx].forEach((row, r) => { row.forEach((val, c) => { if(val) gameState.current.push({x: c, y: r}); }); });
-            gameState.curX = 4; gameState.curY = 0;
-            if(checkTetrisCollision(0, 0)) { triggerGameOverModal("Matrix overflow encountered. Tetris runtime closed."); }
-        }
-
-        function checkTetrisCollision(nx, ny, spec) {
-            let piece = spec || gameState.current;
-            for(let i=0; i<piece.length; i++) {
-                let bx = gameState.curX + piece[i].x + nx;
-                let by = gameState.curY + piece[i].y + ny;
-                if(bx < 0 || bx >= 10 || by >= 20) return true;
-                if(by >= 0 && gameState.grid[by][bx]) return true;
-            }
+    function startFruit(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      let fruits = [];
+      let frames = 0;
+      let missed = 0;
+      let slicing = false;
+      kit.setScore(0);
+      const sliceAt = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+        fruits = fruits.filter((fruit) => {
+          if (Math.hypot(x - fruit.x, y - fruit.y) <= fruit.r + 8) {
+            kit.setScore(Number(info.dataset.score || 0) + 6);
             return false;
-        }
-
-        function lockTetrisPiece() {
-            gameState.current.forEach(b => {
-                let by = gameState.curY + b.y; let bx = gameState.curX + b.x;
-                if(by >= 0) gameState.grid[by][bx] = COLORS[gameState.currentType];
-            });
-            for(let r=19; r>=0; r--) {
-                if(gameState.grid[r].every(v => v !== 0)) { gameState.grid.splice(r, 1); gameState.grid.unshift(Array(10).fill(0)); score += 25; r++; }
-            }
-            spawnTetrisPiece();
-        }
-
-        function moveTetrisDown() { if(!checkTetrisCollision(0, 1)) { gameState.curY++; } else { lockTetrisPiece(); } }
-        document.getElementById('t-left').addEventListener('click', () => { if(!checkTetrisCollision(-1, 0)) gameState.curX--; });
-        document.getElementById('t-right').addEventListener('click', () => { if(!checkTetrisCollision(1, 0)) gameState.curX++; });
-        document.getElementById('t-down').addEventListener('click', () => { moveTetrisDown(); });
-        document.getElementById('t-rot').addEventListener('click', () => {
-            let rotated = gameState.current.map(b => ({ x: -b.y, y: b.x }));
-            let minX = Math.min(...rotated.map(b=>b.x)), minY = Math.min(...rotated.map(b=>b.y));
-            rotated = rotated.map(b => ({ x: b.x - minX, y: b.y - minY }));
-            if(!checkTetrisCollision(0, 0, rotated)) gameState.current = rotated;
+          }
+          return true;
         });
-    </script>
-</body>
-</html>
+      };
+      canvas.onpointerdown = (event) => {
+        slicing = true;
+        canvas.setPointerCapture?.(event.pointerId);
+        sliceAt(event);
+      };
+      canvas.onpointermove = (event) => {
+        if (slicing) sliceAt(event);
+      };
+      canvas.onpointerup = () => { slicing = false; };
+      canvas.onpointerleave = () => { slicing = false; };
+      kit.loop(() => {
+        frames++;
+        if (frames % 42 === 0) fruits.push({ x: 40 + Math.random() * 640, y: 430, vx: -2 + Math.random() * 4, vy: -10 - Math.random() * 4, r: 18 + Math.random() * 10, color: ["#d94d4d", "#d89f2b", "#2b9a66"][Math.floor(Math.random() * 3)] });
+        kit.clear("#0b1730");
+        for (const fruit of fruits) {
+          fruit.x += fruit.vx;
+          fruit.y += fruit.vy;
+          fruit.vy += 0.27;
+          kit.ctx.fillStyle = fruit.color;
+          kit.ctx.beginPath();
+          kit.ctx.arc(fruit.x, fruit.y, fruit.r, 0, Math.PI * 2);
+          kit.ctx.fill();
+        }
+        const before = fruits.length;
+        fruits = fruits.filter((fruit) => fruit.y < 470);
+        missed += before - fruits.length;
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "700 18px sans-serif";
+        kit.ctx.fillText(`Misses: ${missed}/6`, 18, 28);
+        if (missed >= 6) kit.finish();
+      });
+      return kit.stop;
+    }
+
+    function startDino(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      const dino = { x: 80, y: 328, v: 0, onGround: true };
+      let obstacles = [];
+      let frames = 0;
+      let distance = 0;
+      kit.setScore(0);
+      const jump = () => {
+        if (dino.onGround) {
+          dino.v = -12;
+          dino.onGround = false;
+        }
+      };
+      canvas.onpointerdown = jump;
+      kit.loop(() => {
+        frames++;
+        if (kit.keys[" "] || kit.keys.ArrowUp) jump();
+        dino.v += 0.55;
+        dino.y += dino.v;
+        if (dino.y >= 328) {
+          dino.y = 328;
+          dino.v = 0;
+          dino.onGround = true;
+        }
+        if (frames % 88 === 0) obstacles.push({ x: canvas.width, w: 24 + Math.random() * 16, h: 34 + Math.random() * 24 });
+        obstacles.forEach((obstacle) => obstacle.x -= 5.6);
+        distance += 0.08;
+        kit.setScore(distance);
+        kit.clear("#f4f7fb");
+        kit.ctx.fillStyle = "#22314a";
+        kit.ctx.fillRect(0, 360, canvas.width, 4);
+        kit.ctx.fillStyle = "#2b9a66";
+        kit.ctx.fillRect(dino.x, dino.y, 34, 34);
+        kit.ctx.fillStyle = "#c54848";
+        for (const obstacle of obstacles) {
+          kit.ctx.fillRect(obstacle.x, 360 - obstacle.h, obstacle.w, obstacle.h);
+          if (dino.x < obstacle.x + obstacle.w && dino.x + 34 > obstacle.x && dino.y + 34 > 360 - obstacle.h) kit.finish();
+        }
+      });
+      return kit.stop;
+    }
+
+    function startPacman(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      const cell = 32;
+      const map = [
+        "####################",
+        "#........#.........#",
+        "#.####.#.#.####.##.#",
+        "#......#...........#",
+        "###.##.######.##.###",
+        "#......#....#......#",
+        "#.######.##.####...#",
+        "#..................#",
+        "####################"
+      ];
+      const dots = new Set();
+      map.forEach((row, y) => row.split("").forEach((char, x) => { if (char === ".") dots.add(`${x},${y}`); }));
+      const pac = { x: 1, y: 1 };
+      const ghosts = [{ x: 18, y: 7 }, { x: 10, y: 5 }];
+      let frames = 0;
+      kit.setScore(0);
+      const wall = (x, y) => !map[y] || map[y][x] === "#";
+      kit.loop(() => {
+        frames++;
+        if (frames % 8 === 0) {
+          let nx = pac.x;
+          let ny = pac.y;
+          if (kit.keys.ArrowLeft) nx--;
+          if (kit.keys.ArrowRight) nx++;
+          if (kit.keys.ArrowUp) ny--;
+          if (kit.keys.ArrowDown) ny++;
+          if (!wall(nx, ny)) {
+            pac.x = nx;
+            pac.y = ny;
+          }
+          if (dots.delete(`${pac.x},${pac.y}`)) kit.setScore(Number(info.dataset.score || 0) + 3);
+        }
+        if (frames % 18 === 0) {
+          ghosts.forEach((ghost) => {
+            const options = [[1,0],[-1,0],[0,1],[0,-1]]
+              .map(([dx, dy]) => ({ x: ghost.x + dx, y: ghost.y + dy }))
+              .filter((pos) => !wall(pos.x, pos.y))
+              .sort((a, b) => Math.hypot(a.x - pac.x, a.y - pac.y) - Math.hypot(b.x - pac.x, b.y - pac.y));
+            const pick = Math.random() < 0.72 ? options[0] : options[Math.floor(Math.random() * options.length)];
+            ghost.x = pick.x;
+            ghost.y = pick.y;
+          });
+        }
+        kit.clear("#071832");
+        map.forEach((row, y) => row.split("").forEach((char, x) => {
+          if (char === "#") {
+            kit.ctx.fillStyle = "#1f7ae0";
+            kit.ctx.fillRect(x * cell, y * cell, cell - 2, cell - 2);
+          }
+        }));
+        kit.ctx.fillStyle = "#d7b47a";
+        dots.forEach((key) => {
+          const [x, y] = key.split(",").map(Number);
+          kit.ctx.beginPath();
+          kit.ctx.arc(x * cell + 16, y * cell + 16, 4, 0, Math.PI * 2);
+          kit.ctx.fill();
+        });
+        kit.ctx.fillStyle = "#ffd84b";
+        kit.ctx.beginPath();
+        kit.ctx.arc(pac.x * cell + 16, pac.y * cell + 16, 13, 0.25, Math.PI * 1.75);
+        kit.ctx.lineTo(pac.x * cell + 16, pac.y * cell + 16);
+        kit.ctx.fill();
+        ghosts.forEach((ghost, i) => {
+          kit.ctx.fillStyle = i ? "#8fc4ff" : "#c54848";
+          kit.ctx.beginPath();
+          kit.ctx.arc(ghost.x * cell + 16, ghost.y * cell + 16, 13, 0, Math.PI * 2);
+          kit.ctx.fill();
+          if (ghost.x === pac.x && ghost.y === pac.y) kit.finish();
+        });
+        if (dots.size === 0) kit.finish();
+      });
+      return kit.stop;
+    }
+
+    function startBomb(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      let target = { x: 360, y: 370, w: 110 };
+      let bomb = null;
+      let missed = 0;
+      kit.setScore(0);
+      canvas.onpointerdown = (event) => {
+        if (bomb) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+        bomb = { x, y: 20, vy: 4 };
+      };
+      kit.loop(() => {
+        target.x += Math.sin(Date.now() / 360) * 2.4;
+        if (bomb) {
+          bomb.y += bomb.vy;
+          bomb.vy += 0.18;
+          if (bomb.y > target.y) {
+            if (bomb.x > target.x - target.w / 2 && bomb.x < target.x + target.w / 2) {
+              kit.setScore(Number(info.dataset.score || 0) + 12);
+              target.w = Math.max(46, target.w - 7);
+            } else {
+              missed++;
+            }
+            bomb = null;
+          }
+        }
+        kit.clear("#122034");
+        kit.ctx.fillStyle = "#2b9a66";
+        kit.ctx.fillRect(target.x - target.w / 2, target.y, target.w, 18);
+        kit.ctx.strokeStyle = "#d7b47a";
+        kit.ctx.lineWidth = 4;
+        kit.ctx.strokeRect(target.x - target.w / 2 - 8, target.y - 8, target.w + 16, 34);
+        if (bomb) {
+          kit.ctx.fillStyle = "#c54848";
+          kit.ctx.beginPath();
+          kit.ctx.arc(bomb.x, bomb.y, 13, 0, Math.PI * 2);
+          kit.ctx.fill();
+        }
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "700 18px sans-serif";
+        kit.ctx.fillText(`Misses: ${missed}/4`, 18, 28);
+        if (missed >= 4) kit.finish();
+      });
+      return kit.stop;
+    }
+
+    function startFishing(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      let hook = { y: 70, down: true };
+      let fish = { x: 60, y: 270, speed: 2.8 };
+      let casts = 0;
+      kit.setScore(0);
+      canvas.onpointerdown = () => { hook.down = !hook.down; casts++; };
+      kit.loop(() => {
+        hook.y += hook.down ? 3 : -3.8;
+        hook.y = Math.max(64, Math.min(330, hook.y));
+        fish.x += fish.speed;
+        if (fish.x > canvas.width - 30 || fish.x < 30) fish.speed *= -1;
+        if (Math.abs(fish.x - 360) < 28 && Math.abs(fish.y - hook.y) < 24 && !hook.down) {
+          kit.setScore(Number(info.dataset.score || 0) + 18);
+          fish = { x: 40 + Math.random() * 600, y: 190 + Math.random() * 150, speed: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 2.8) };
+        }
+        kit.clear("#0f4773");
+        kit.ctx.fillStyle = "#d7b47a";
+        kit.ctx.fillRect(0, 0, canvas.width, 64);
+        kit.ctx.strokeStyle = "#101722";
+        kit.ctx.lineWidth = 3;
+        kit.ctx.beginPath();
+        kit.ctx.moveTo(360, 40);
+        kit.ctx.lineTo(360, hook.y);
+        kit.ctx.stroke();
+        kit.ctx.fillStyle = "#101722";
+        kit.ctx.beginPath();
+        kit.ctx.arc(360, hook.y, 7, 0, Math.PI * 2);
+        kit.ctx.fill();
+        kit.ctx.fillStyle = "#f0c44d";
+        kit.ctx.beginPath();
+        kit.ctx.ellipse(fish.x, fish.y, 28, 14, 0, 0, Math.PI * 2);
+        kit.ctx.fill();
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "700 18px sans-serif";
+        kit.ctx.fillText(`Casts: ${casts}/18`, 18, 94);
+        if (casts >= 18) kit.finish();
+      });
+      return kit.stop;
+    }
+
+    function startTetris(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      const cols = 10;
+      const rows = 18;
+      const size = 28;
+      const ox = 220;
+      const oy = 30;
+      const shapes = [
+        [[1,1,1,1]],
+        [[1,1],[1,1]],
+        [[0,1,0],[1,1,1]],
+        [[1,0,0],[1,1,1]],
+        [[0,0,1],[1,1,1]],
+        [[1,1,0],[0,1,1]],
+        [[0,1,1],[1,1,0]]
+      ];
+      const board = Array.from({ length: rows }, () => Array(cols).fill(0));
+      let piece = newPiece();
+      let drop = 0;
+      kit.setScore(0);
+      function newPiece() {
+        return { shape: shapes[Math.floor(Math.random() * shapes.length)].map((row) => row.slice()), x: 3, y: 0, color: 1 + Math.floor(Math.random() * 6) };
+      }
+      function collide(px, py, shape = piece.shape) {
+        return shape.some((row, y) => row.some((cell, x) => cell && (px + x < 0 || px + x >= cols || py + y >= rows || board[py + y]?.[px + x])));
+      }
+      function merge() {
+        piece.shape.forEach((row, y) => row.forEach((cell, x) => { if (cell) board[piece.y + y][piece.x + x] = piece.color; }));
+        for (let y = rows - 1; y >= 0; y--) {
+          if (board[y].every(Boolean)) {
+            board.splice(y, 1);
+            board.unshift(Array(cols).fill(0));
+            kit.setScore(Number(info.dataset.score || 0) + 20);
+            y++;
+          }
+        }
+        piece = newPiece();
+        if (collide(piece.x, piece.y)) kit.finish();
+      }
+      function rotate() {
+        const rotated = piece.shape[0].map((_, i) => piece.shape.map((row) => row[i]).reverse());
+        if (!collide(piece.x, piece.y, rotated)) piece.shape = rotated;
+      }
+      kit.loop(() => {
+        drop++;
+        if (kit.keys.ArrowLeft && !collide(piece.x - 1, piece.y)) { piece.x--; kit.keys.ArrowLeft = false; }
+        if (kit.keys.ArrowRight && !collide(piece.x + 1, piece.y)) { piece.x++; kit.keys.ArrowRight = false; }
+        if (kit.keys.ArrowUp) { rotate(); kit.keys.ArrowUp = false; }
+        if (drop % (kit.keys.ArrowDown ? 5 : 28) === 0) {
+          if (!collide(piece.x, piece.y + 1)) piece.y++;
+          else merge();
+        }
+        kit.clear("#111827");
+        kit.ctx.fillStyle = "#0b1324";
+        kit.ctx.fillRect(ox - 4, oy - 4, cols * size + 8, rows * size + 8);
+        const drawCell = (x, y, color) => {
+          kit.ctx.fillStyle = ["#000", "#1f7ae0", "#d7b47a", "#2b9a66", "#c54848", "#8fc4ff", "#d89f2b"][color];
+          kit.ctx.fillRect(ox + x * size + 1, oy + y * size + 1, size - 2, size - 2);
+        };
+        board.forEach((row, y) => row.forEach((cell, x) => { if (cell) drawCell(x, y, cell); }));
+        piece.shape.forEach((row, y) => row.forEach((cell, x) => { if (cell) drawCell(piece.x + x, piece.y + y, piece.color); }));
+      });
+      return kit.stop;
+    }
+
+    function startBlockBlast(canvas, info, done) {
+      const kit = getCanvasKit(canvas, info, done);
+      const size = 36;
+      const ox = 196;
+      const oy = 18;
+      const board = Array.from({ length: 8 }, () => Array(8).fill(0));
+      const pieces = [
+        [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]], [[1,1],[1,0]], [[1,1],[0,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]]
+      ];
+      let current = newPiece();
+      kit.setScore(0);
+      function newPiece() {
+        return pieces[Math.floor(Math.random() * pieces.length)].map((row) => row.slice());
+      }
+      function canPlace(x, y) {
+        return current.every((row, py) => row.every((cell, px) => !cell || (x + px >= 0 && x + px < 8 && y + py >= 0 && y + py < 8 && !board[y + py][x + px])));
+      }
+      function clearLines() {
+        let cleared = 0;
+        for (let y = 0; y < 8; y++) {
+          if (board[y].every(Boolean)) {
+            board[y].fill(0);
+            cleared++;
+          }
+        }
+        for (let x = 0; x < 8; x++) {
+          if (board.every((row) => row[x])) {
+            board.forEach((row) => row[x] = 0);
+            cleared++;
+          }
+        }
+        if (cleared) kit.setScore(Number(info.dataset.score || 0) + cleared * 30);
+      }
+      canvas.onpointerdown = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor(((event.clientX - rect.left) * (canvas.width / rect.width) - ox) / size);
+        const y = Math.floor(((event.clientY - rect.top) * (canvas.height / rect.height) - oy) / size);
+        if (canPlace(x, y)) {
+          current.forEach((row, py) => row.forEach((cell, px) => { if (cell) board[y + py][x + px] = 1; }));
+          kit.setScore(Number(info.dataset.score || 0) + 8);
+          clearLines();
+          current = newPiece();
+          let possible = false;
+          for (let yy = 0; yy < 8; yy++) for (let xx = 0; xx < 8; xx++) if (canPlace(xx, yy)) possible = true;
+          if (!possible) kit.finish();
+        }
+      };
+      kit.loop(() => {
+        kit.clear("#101722");
+        for (let y = 0; y < 8; y++) {
+          for (let x = 0; x < 8; x++) {
+            kit.ctx.fillStyle = board[y][x] ? "#1f7ae0" : "#202c41";
+            kit.ctx.fillRect(ox + x * size + 2, oy + y * size + 2, size - 4, size - 4);
+          }
+        }
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "800 18px sans-serif";
+        kit.ctx.fillText("Next piece", 30, 60);
+        current.forEach((row, y) => row.forEach((cell, x) => {
+          if (cell) {
+            kit.ctx.fillStyle = "#d7b47a";
+            kit.ctx.fillRect(42 + x * 32, 86 + y * 32, 28, 28);
+          }
+        }));
+      });
+      return kit.stop;
+    }
+
+    function startChess(canvas, info, done, options = {}) {
+      const kit = getCanvasKit(canvas, info, done);
+      const size = 56;
+      const ox = 136;
+      const oy = 58;
+      const playerColor = options.playerColor === "black" ? "black" : "white";
+      const playerIsWhite = playerColor === "white";
+      const botIsWhite = !playerIsWhite;
+      let selected = null;
+      let lastMove = null;
+      let lastMoveAt = 0;
+      let board = [
+        ["r","n","b","q","k","b","n","r"],
+        ["p","p","p","p","p","p","p","p"],
+        ["","","","","","","",""],
+        ["","","","","","","",""],
+        ["","","","","","","",""],
+        ["","","","","","","",""],
+        ["P","P","P","P","P","P","P","P"],
+        ["R","N","B","Q","K","B","N","R"]
+      ];
+      kit.setScore(0);
+      const values = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 50 };
+      const pieceIsWhite = (piece) => piece && piece === piece.toUpperCase();
+      function movesFor(x, y, white) {
+        const p = board[y][x];
+        if (!p) return [];
+        const lower = p.toLowerCase();
+        const dirs = [];
+        const moves = [];
+        const add = (nx, ny) => {
+          if (nx < 0 || nx > 7 || ny < 0 || ny > 7) return false;
+          const target = board[ny][nx];
+          if (!target) { moves.push([nx, ny]); return true; }
+          if (pieceIsWhite(target) !== white) moves.push([nx, ny]);
+          return false;
+        };
+        if (lower === "p") {
+          const d = white ? -1 : 1;
+          const oneY = y + d;
+          const twoY = y + d * 2;
+          const startRow = white ? 6 : 1;
+          if (board[oneY] && !board[oneY][x]) {
+            moves.push([x, oneY]);
+            if (y === startRow && board[twoY] && !board[twoY][x]) moves.push([x, twoY]);
+          }
+          [-1, 1].forEach((dx) => {
+            const t = board[y + d]?.[x + dx];
+            if (t && pieceIsWhite(t) !== white) moves.push([x + dx, y + d]);
+          });
+        }
+        if (lower === "n") [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]].forEach(([dx, dy]) => add(x + dx, y + dy));
+        if (lower === "k") [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].forEach(([dx, dy]) => add(x + dx, y + dy));
+        if (["b", "r", "q"].includes(lower)) {
+          if (["b", "q"].includes(lower)) dirs.push([1,1],[-1,1],[1,-1],[-1,-1]);
+          if (["r", "q"].includes(lower)) dirs.push([1,0],[-1,0],[0,1],[0,-1]);
+          dirs.forEach(([dx, dy]) => {
+            for (let step = 1; step < 8; step++) if (!add(x + dx * step, y + dy * step)) break;
+          });
+        }
+        return moves;
+      }
+      function botMove() {
+        const moves = [];
+        board.forEach((row, y) => row.forEach((p, x) => {
+          if (p && pieceIsWhite(p) === botIsWhite) movesFor(x, y, botIsWhite).forEach(([nx, ny]) => moves.push({ x, y, nx, ny, gain: values[(board[ny][nx] || "").toLowerCase()] || 0 }));
+        }));
+        if (!moves.length) return kit.finish();
+        moves.sort((a, b) => b.gain - a.gain || Math.random() - 0.5);
+        const move = moves[0];
+        if ((board[move.ny][move.nx] || "").toLowerCase() === "k") return kit.finish();
+        board[move.ny][move.nx] = board[move.y][move.x];
+        board[move.y][move.x] = "";
+        lastMove = { fromX: move.x, fromY: move.y, toX: move.nx, toY: move.ny };
+        lastMoveAt = performance.now();
+      }
+      function drawPiece(ctx, piece, cx, cy, pulse) {
+        const white = pieceIsWhite(piece);
+        const kind = piece.toLowerCase();
+        const body = white ? "#f6f7fb" : "#07090d";
+        const trim = white ? "#2b3345" : "#f4f7fb";
+        const glow = white ? "rgba(255,255,255,0.36)" : "rgba(0,0,0,0.55)";
+        const scale = 1 + pulse * 0.08;
+        ctx.save();
+        ctx.translate(cx, cy - pulse * 2);
+        ctx.scale(scale, scale);
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = body;
+        ctx.strokeStyle = trim;
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.ellipse(0, 18, 19, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 8;
+
+        if (kind === "p") {
+          ctx.beginPath();
+          ctx.arc(0, -10, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-10, 21);
+          ctx.lineTo(-10, 8);
+          ctx.quadraticCurveTo(-10, -2, 0, -2);
+          ctx.quadraticCurveTo(10, -2, 10, 8);
+          ctx.lineTo(10, 21);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        if (kind === "r") {
+          ctx.beginPath();
+          ctx.rect(-17, -20, 34, 12);
+          ctx.rect(-14, -8, 28, 29);
+          ctx.fill();
+          ctx.stroke();
+          for (let i = -1; i <= 1; i++) {
+            ctx.fillStyle = trim;
+            ctx.fillRect(i * 11 - 3, -20, 6, 7);
+          }
+        }
+        if (kind === "n") {
+          ctx.beginPath();
+          ctx.moveTo(-14, 20);
+          ctx.lineTo(-10, -13);
+          ctx.quadraticCurveTo(0, -28, 15, -18);
+          ctx.quadraticCurveTo(5, -12, 14, -2);
+          ctx.lineTo(4, 21);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = trim;
+          ctx.beginPath();
+          ctx.arc(5, -15, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (kind === "b") {
+          ctx.beginPath();
+          ctx.arc(0, -17, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, -8);
+          ctx.quadraticCurveTo(-18, 6, -9, 22);
+          ctx.lineTo(9, 22);
+          ctx.quadraticCurveTo(18, 6, 0, -8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = trim;
+          ctx.beginPath();
+          ctx.moveTo(5, -23);
+          ctx.lineTo(-5, -12);
+          ctx.stroke();
+        }
+        if (kind === "q" || kind === "k") {
+          ctx.beginPath();
+          ctx.moveTo(-17, 20);
+          ctx.lineTo(-13, -2);
+          ctx.lineTo(-5, 7);
+          ctx.lineTo(0, -18);
+          ctx.lineTo(5, 7);
+          ctx.lineTo(13, -2);
+          ctx.lineTo(17, 20);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = trim;
+          [-13, 0, 13].forEach((x) => {
+            ctx.beginPath();
+            ctx.arc(x, -4, 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          if (kind === "k") {
+            ctx.fillRect(-2, -29, 4, 18);
+            ctx.fillRect(-8, -23, 16, 4);
+          }
+        }
+
+        ctx.restore();
+      }
+      canvas.onpointerdown = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor(((event.clientX - rect.left) * (canvas.width / rect.width) - ox) / size);
+        const y = Math.floor(((event.clientY - rect.top) * (canvas.height / rect.height) - oy) / size);
+        if (x < 0 || x > 7 || y < 0 || y > 7) return;
+        const p = board[y][x];
+        if (selected) {
+          const legal = movesFor(selected.x, selected.y, playerIsWhite).some(([mx, my]) => mx === x && my === y);
+          if (legal) {
+            const captured = board[y][x];
+            if ((captured || "").toLowerCase() === "k") kit.finish();
+            board[y][x] = board[selected.y][selected.x];
+            board[selected.y][selected.x] = "";
+            lastMove = { fromX: selected.x, fromY: selected.y, toX: x, toY: y };
+            lastMoveAt = performance.now();
+            kit.setScore(Number(info.dataset.score || 0) + (values[(captured || "").toLowerCase()] || 1) * 6);
+            selected = null;
+            setTimeout(botMove, 240);
+          } else selected = null;
+        } else if (p && pieceIsWhite(p) === playerIsWhite) selected = { x, y };
+      };
+      if (!playerIsWhite) setTimeout(botMove, 420);
+      kit.loop(() => {
+        const legalSquares = selected ? movesFor(selected.x, selected.y, playerIsWhite).map(([x, y]) => `${x},${y}`) : [];
+        kit.clear("#070a0f");
+        kit.ctx.fillStyle = "#101722";
+        kit.ctx.fillRect(ox - 18, oy - 18, size * 8 + 36, size * 8 + 36);
+        kit.ctx.strokeStyle = "#d52035";
+        kit.ctx.lineWidth = 5;
+        kit.ctx.strokeRect(ox - 12, oy - 12, size * 8 + 24, size * 8 + 24);
+        for (let y = 0; y < 8; y++) {
+          for (let x = 0; x < 8; x++) {
+            kit.ctx.fillStyle = (x + y) % 2 ? "#19090d" : "#7c111d";
+            kit.ctx.fillRect(ox + x * size, oy + y * size, size, size);
+            if (lastMove && ((lastMove.fromX === x && lastMove.fromY === y) || (lastMove.toX === x && lastMove.toY === y))) {
+              kit.ctx.fillStyle = "rgba(255, 216, 75, 0.22)";
+              kit.ctx.fillRect(ox + x * size, oy + y * size, size, size);
+            }
+            if (legalSquares.includes(`${x},${y}`)) {
+              kit.ctx.fillStyle = board[y][x] ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.16)";
+              kit.ctx.beginPath();
+              kit.ctx.arc(ox + x * size + size / 2, oy + y * size + size / 2, board[y][x] ? 18 : 8, 0, Math.PI * 2);
+              kit.ctx.fill();
+            }
+            if (selected && selected.x === x && selected.y === y) {
+              kit.ctx.strokeStyle = "#ffd84b";
+              kit.ctx.lineWidth = 4;
+              kit.ctx.strokeRect(ox + x * size + 4, oy + y * size + 4, size - 8, size - 8);
+            }
+            const p = board[y][x];
+            if (p) {
+              const isRecent = lastMove && lastMove.toX === x && lastMove.toY === y;
+              const moveAge = Math.min(1, (performance.now() - lastMoveAt) / 520);
+              const pulse = isRecent ? 1 - moveAge : 0;
+              drawPiece(kit.ctx, p, ox + x * size + size / 2, oy + y * size + size / 2, pulse);
+            }
+          }
+        }
+        kit.ctx.fillStyle = "white";
+        kit.ctx.font = "800 18px sans-serif";
+        kit.ctx.fillText(`You are ${playerColor}. Bot is ${playerIsWhite ? "black" : "white"}.`, 22, 32);
+        kit.ctx.font = "700 14px sans-serif";
+        kit.ctx.fillStyle = "rgba(255,255,255,0.72)";
+        kit.ctx.fillText("Tap a black piece, then tap a legal square.", 22, 52);
+      });
+      return kit.stop;
+    }
+
+    function bindEvents() {
+      $("startBtn").addEventListener("click", showAuthChoice);
+      $("chooseLoginBtn").addEventListener("click", () => showAuthForm("login"));
+      $("chooseSignupBtn").addEventListener("click", () => showAuthForm("signup"));
+      document.querySelectorAll("[data-auth-choice]").forEach((btn) => btn.addEventListener("click", showAuthChoice));
+      $("signupForm").addEventListener("submit", signup);
+      $("loginForm").addEventListener("submit", login);
+      $("gamesBtn").addEventListener("click", () => { renderGames(); showView("gamesView"); });
+      $("learnBtn").addEventListener("click", () => { renderLessons(); showView("learnView"); });
+      document.querySelectorAll("[data-go-home]").forEach((btn) => btn.addEventListener("click", () => showView("homeView")));
+      $("logoutBtn").addEventListener("click", logout);
+      $("settingsBtn").addEventListener("click", settingsModal);
+      $("codeBtn").addEventListener("click", codeModal);
+      $("leaderboardBtn").addEventListener("click", () => adminModal("leaderboard"));
+      $("logsBtn").addEventListener("click", () => adminModal("logs"));
+      $("accountsBtn").addEventListener("click", () => adminModal("accounts"));
+      $("closeModalBtn").addEventListener("click", closeModal);
+      $("modal").addEventListener("click", (event) => { if (event.target.id === "modal") closeModal(); });
+      setInterval(() => {
+        if (state.currentUserId) saveState("");
+      }, 60000);
+      window.addEventListener("beforeunload", () => saveState(""));
+    }
+
+    ensureAdmin();
+    bindEvents();
+    applyTheme(state.guestTheme || "black");
+    if (state.currentUserId && getCurrentUser()?.active) enterApp();
+  </script>
+
+
+</body></html>
