@@ -933,7 +933,11 @@
           <button class="small-icon" id="leaderboardBtn" title="Credits Leaderboard">Board</button>
           <button class="small-icon" id="logsBtn" title="Logs">Logs</button>
           <button class="small-icon" id="accountsBtn" title="Account Deactivations">Accounts</button>
+          <button class="small-icon" id="adminMessageBtn" title="Send Message">Msg</button>
+          <button class="small-icon" id="giftBtn" title="Gift Credits">Gift</button>
+          <button class="small-icon" id="adminUpdateBtn" title="Create Update">Post</button>
         </div>
+        <button id="inboxBtn" class="small-icon" title="Messages and Updates">Inbox</button>
         <button id="codeBtn" class="small-icon admin-only" title="View Code">Code</button>
         <button id="settingsBtn" class="small-icon" title="Settings">Settings</button>
       </header>
@@ -1160,14 +1164,14 @@
   <div id="modal" class="modal" role="dialog" aria-modal="true">
     <div class="modal-card">
       <div class="modal-head">
-        <h2 id="modalTitle">Code</h2>
+        <h2 id="modalTitle">Credits Leaderboard</h2>
         <button id="closeModalBtn" class="small-icon" title="Close">Close</button>
       </div>
       <div id="modalBody" class="modal-body"></div>
     </div>
   </div>
 
-  <div id="toast" class="toast show">Code selected.</div>
+  <div id="toast" class="toast"></div>
 
   <script>
     const STORAGE_KEY = "jeremyLearningProgram.v1";
@@ -1227,12 +1231,20 @@
       users: [],
       currentUserId: null,
       logs: [],
+      siteMessages: [],
+      updateLogs: [],
       guestTheme: "black",
       lastSaved: Date.now()
     });
 
     let state = loadState();
     let currentGameLoop = null;
+    let stateChannel = null;
+    try {
+      stateChannel = new BroadcastChannel("jeremyLearningProgram");
+    } catch {
+      stateChannel = null;
+    }
 
     const $ = (id) => document.getElementById(id);
 
@@ -1245,7 +1257,9 @@
           ...defaultState(),
           ...parsed,
           users: Array.isArray(parsed.users) ? parsed.users : [],
-          logs: Array.isArray(parsed.logs) ? parsed.logs : []
+          logs: Array.isArray(parsed.logs) ? parsed.logs : [],
+          siteMessages: Array.isArray(parsed.siteMessages) ? parsed.siteMessages : [],
+          updateLogs: Array.isArray(parsed.updateLogs) ? parsed.updateLogs : []
         };
       } catch {
         return defaultState();
@@ -1256,6 +1270,16 @@
       state.lastSaved = Date.now();
       if (reason) addLog(reason, false);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      stateChannel?.postMessage({ type: "state-updated", time: state.lastSaved });
+    }
+
+    function reloadStoredState() {
+      const currentId = state.currentUserId;
+      state = loadState();
+      state.currentUserId = currentId && state.users.some((user) => user.id === currentId && user.active) ? currentId : null;
+      ensureAdmin(false);
+      const user = getCurrentUser();
+      if (user) renderApp();
     }
 
     function addLog(message, shouldSave = true) {
@@ -1334,7 +1358,7 @@
       };
     }
 
-    function ensureAdmin() {
+    function ensureAdmin(shouldWrite = true) {
       const existing = state.users.find((user) => user.role === "admin");
       state.users.forEach((user) => {
         user.name = user.role === "admin" ? ADMIN_NAME : formatName(user.name);
@@ -1354,7 +1378,7 @@
         existing.active = true;
         existing.id = "admin-account";
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (shouldWrite) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
     function showScreen(id) {
@@ -1517,6 +1541,8 @@
       $("userLine").textContent = isAdmin(user) ? "Admin account" : `Signed in as ${user.name}`;
       $("homeTitle").textContent = `Home, ${user.name}`;
       $("creditsPill").textContent = isAdmin(user) ? "Credits: Unlimited" : `Credits: ${user.credits}`;
+      const inboxCount = (state.siteMessages?.length || 0) + (state.updateLogs?.length || 0);
+      $("inboxBtn").textContent = inboxCount ? `Inbox ${inboxCount}` : "Inbox";
       $("unlockedStat").textContent = isAdmin(user) ? games.length : user.unlocked.length;
       $("playedStat").textContent = user.played || 0;
       $("lessonStat").textContent = user.lessonsCompleted || 0;
@@ -1689,7 +1715,7 @@
             state.currentUserId = null;
             saveState("");
             closeModal();
-            showAuthForm("login");
+            showScreen("welcomeScreen");
             toast("Account deactivated.");
           });
         });
@@ -1737,6 +1763,137 @@
       $("switchSignupBtn").addEventListener("click", () => goAuth("signup"));
       $("modalBody").querySelectorAll("[data-switch-name]").forEach((btn) => {
         btn.addEventListener("click", () => goAuth("login", btn.dataset.switchName));
+      });
+    }
+
+    function inboxModal() {
+      const user = getCurrentUser();
+      if (!user) return;
+      const messages = (state.siteMessages || []).map((message) => `
+        <div class="list-row">
+          <span><b>${escapeHtml(message.title || "Admin Message")}</b><br>${escapeHtml(message.body)}<br><small>${escapeHtml(message.time)}</small></span>
+        </div>
+      `).join("") || `<p class="muted">No admin messages yet.</p>`;
+      const updates = (state.updateLogs || []).map((update) => {
+        const claimed = update.claimedBy?.includes(user.id);
+        const canClaim = update.claimCredits > 0 && !isAdmin(user) && !claimed;
+        return `
+          <div class="list-row">
+            <span><b>${escapeHtml(update.title || "Update")}</b><br>${escapeHtml(update.body)}<br><small>${escapeHtml(update.time)}</small></span>
+            ${update.claimCredits > 0 ? `<button class="${canClaim ? "primary" : "secondary"}" ${canClaim ? `data-claim-update="${update.id}"` : "disabled"} type="button">${claimed ? "Claimed" : `Claim ${update.claimCredits}`}</button>` : ""}
+          </div>
+        `;
+      }).join("") || `<p class="muted">No update logs yet.</p>`;
+      openModal("Inbox", `
+        <div class="settings-grid">
+          <section class="admin-section">
+            <h3>Messages</h3>
+            <div class="list">${messages}</div>
+          </section>
+          <section class="admin-section">
+            <h3>Update Log</h3>
+            <div class="list">${updates}</div>
+          </section>
+        </div>
+      `);
+      $("modalBody").querySelectorAll("[data-claim-update]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const update = state.updateLogs.find((item) => item.id === btn.dataset.claimUpdate);
+          if (!update || update.claimedBy?.includes(user.id)) return;
+          update.claimedBy = Array.isArray(update.claimedBy) ? update.claimedBy : [];
+          update.claimedBy.push(user.id);
+          user.credits += update.claimCredits;
+          addLog(`${user.name} claimed ${update.claimCredits} update credits`);
+          saveState("");
+          renderApp();
+          toast(`Claimed ${update.claimCredits} credits.`);
+          inboxModal();
+        });
+      });
+    }
+
+    function adminMessageModal() {
+      if (!isAdmin()) return;
+      openModal("Send Site Message", `
+        <form id="siteMessageForm" class="settings-grid">
+          <section class="admin-section">
+            <label class="field"><span>Title</span><input id="siteMessageTitle" maxlength="48" value="Admin Message"></label>
+            <label class="field"><span>Message</span><input id="siteMessageBody" required maxlength="240" placeholder="Type a message everyone can see"></label>
+            <button class="primary" type="submit">Send Message</button>
+          </section>
+        </form>
+      `);
+      $("siteMessageForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.siteMessages.unshift({
+          id: cryptoId(),
+          title: $("siteMessageTitle").value.trim() || "Admin Message",
+          body: $("siteMessageBody").value.trim(),
+          time: new Date().toLocaleString()
+        });
+        state.siteMessages = state.siteMessages.slice(0, 20);
+        addLog("Admin sent a site message");
+        saveState("");
+        toast("Message sent.");
+        closeModal();
+      });
+    }
+
+    function giftCreditsModal() {
+      if (!isAdmin()) return;
+      const users = state.users.filter((user) => user.role !== "admin" && user.active);
+      const options = users.map((user) => `<option value="${user.id}">${escapeHtml(user.name)} (${user.credits} credits)</option>`).join("");
+      openModal("Gift Credits", `
+        <form id="giftCreditsForm" class="settings-grid">
+          <section class="admin-section">
+            <label class="field"><span>User</span><select id="giftUser" required>${options}</select></label>
+            <label class="field"><span>Amount</span><input id="giftAmount" type="number" min="1" max="9999" value="5" required></label>
+            <button class="primary" type="submit" ${users.length ? "" : "disabled"}>Gift Credits</button>
+          </section>
+        </form>
+      `);
+      $("giftCreditsForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const target = state.users.find((user) => user.id === $("giftUser").value && user.role !== "admin");
+        const amount = Math.max(1, Math.min(9999, Number($("giftAmount").value || 0)));
+        if (!target) return;
+        target.credits += amount;
+        addLog(`Admin gifted ${amount} credits to ${target.name}`);
+        saveState("");
+        renderApp();
+        toast(`Gifted ${amount} credits.`);
+        closeModal();
+      });
+    }
+
+    function adminUpdateModal() {
+      if (!isAdmin()) return;
+      openModal("Create Update Log", `
+        <form id="updateLogForm" class="settings-grid">
+          <section class="admin-section">
+            <label class="field"><span>Title</span><input id="updateTitle" maxlength="48" value="Update"></label>
+            <label class="field"><span>Message</span><input id="updateBody" required maxlength="260" placeholder="What changed?"></label>
+            <label class="field"><span>Claim Credits</span><input id="updateClaim" type="number" min="0" max="1000" value="5"></label>
+            <button class="primary" type="submit">Post Update</button>
+          </section>
+        </form>
+      `);
+      $("updateLogForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.updateLogs.unshift({
+          id: cryptoId(),
+          title: $("updateTitle").value.trim() || "Update",
+          body: $("updateBody").value.trim(),
+          claimCredits: Math.max(0, Math.min(1000, Number($("updateClaim").value || 0))),
+          claimedBy: [],
+          time: new Date().toLocaleString()
+        });
+        state.updateLogs = state.updateLogs.slice(0, 30);
+        addLog("Admin posted an update log");
+        saveState("");
+        renderApp();
+        toast("Update posted.");
+        closeModal();
       });
     }
 
@@ -1875,7 +2032,8 @@
       if (user) addLog("Logged out");
       state.currentUserId = null;
       saveState("");
-      showAuthForm("login");
+      closeModal();
+      showScreen("welcomeScreen");
       toast("Logged out. Progress saved.");
     }
 
@@ -1925,6 +2083,8 @@
       let score = 0;
       const keys = {};
       const cleanup = [];
+      let lastTouchFallbackAt = 0;
+      let lastNativeTouchPointerAt = 0;
       const setScore = (value, label = "Score") => {
         score = Math.max(0, Math.floor(value));
         info.dataset.score = score;
@@ -1952,6 +2112,8 @@
         const point = touchPoint(event);
         if (point && canvas.onpointerdown) {
           event.preventDefault();
+          if (Date.now() - lastNativeTouchPointerAt < 650) return;
+          lastTouchFallbackAt = Date.now();
           canvas.onpointerdown(point);
         }
       };
@@ -1959,6 +2121,8 @@
         const point = touchPoint(event);
         if (point && canvas.onpointermove) {
           event.preventDefault();
+          if (Date.now() - lastNativeTouchPointerAt < 650) return;
+          lastTouchFallbackAt = Date.now();
           canvas.onpointermove(point);
         }
       };
@@ -1966,21 +2130,37 @@
         const point = touchPoint(event);
         if (point && canvas.onpointerup) {
           event.preventDefault();
+          if (Date.now() - lastNativeTouchPointerAt < 650) return;
+          lastTouchFallbackAt = Date.now();
           canvas.onpointerup(point);
         }
       };
-      if (!window.PointerEvent) {
-        canvas.addEventListener("touchstart", touchStart, { passive: false });
-        canvas.addEventListener("touchmove", touchMove, { passive: false });
-        canvas.addEventListener("touchend", touchEnd, { passive: false });
-        canvas.addEventListener("touchcancel", touchEnd, { passive: false });
-        cleanup.push(() => {
-          canvas.removeEventListener("touchstart", touchStart);
-          canvas.removeEventListener("touchmove", touchMove);
-          canvas.removeEventListener("touchend", touchEnd);
-          canvas.removeEventListener("touchcancel", touchEnd);
-        });
-      }
+      const suppressNativeTouchPointer = (event) => {
+        if (event.pointerType === "touch" && Date.now() - lastTouchFallbackAt < 650) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        if (event.pointerType === "touch") {
+          lastNativeTouchPointerAt = Date.now();
+        }
+      };
+      canvas.addEventListener("pointerdown", suppressNativeTouchPointer, true);
+      canvas.addEventListener("pointermove", suppressNativeTouchPointer, true);
+      canvas.addEventListener("pointerup", suppressNativeTouchPointer, true);
+      canvas.addEventListener("touchstart", touchStart, { passive: false });
+      canvas.addEventListener("touchmove", touchMove, { passive: false });
+      canvas.addEventListener("touchend", touchEnd, { passive: false });
+      canvas.addEventListener("touchcancel", touchEnd, { passive: false });
+      cleanup.push(() => {
+        canvas.removeEventListener("pointerdown", suppressNativeTouchPointer, true);
+        canvas.removeEventListener("pointermove", suppressNativeTouchPointer, true);
+        canvas.removeEventListener("pointerup", suppressNativeTouchPointer, true);
+        canvas.removeEventListener("touchstart", touchStart);
+        canvas.removeEventListener("touchmove", touchMove);
+        canvas.removeEventListener("touchend", touchEnd);
+        canvas.removeEventListener("touchcancel", touchEnd);
+      });
       const stop = () => {
         running = false;
         cancelAnimationFrame(raf);
@@ -2792,16 +2972,32 @@
       document.querySelectorAll("[data-go-home]").forEach((btn) => btn.addEventListener("click", () => showView("homeView")));
       $("logoutBtn").addEventListener("click", logout);
       $("settingsBtn").addEventListener("click", settingsModal);
+      $("inboxBtn").addEventListener("click", inboxModal);
       $("codeBtn").addEventListener("click", codeModal);
       $("leaderboardBtn").addEventListener("click", () => adminModal("leaderboard"));
       $("logsBtn").addEventListener("click", () => adminModal("logs"));
       $("accountsBtn").addEventListener("click", () => adminModal("accounts"));
+      $("adminMessageBtn").addEventListener("click", adminMessageModal);
+      $("giftBtn").addEventListener("click", giftCreditsModal);
+      $("adminUpdateBtn").addEventListener("click", adminUpdateModal);
       $("closeModalBtn").addEventListener("click", closeModal);
       $("modal").addEventListener("click", (event) => { if (event.target.id === "modal") closeModal(); });
       setInterval(() => {
         if (state.currentUserId) saveState("");
       }, 60000);
       window.addEventListener("beforeunload", () => saveState(""));
+      window.addEventListener("storage", (event) => {
+        if (event.key === STORAGE_KEY && getCurrentUser()) {
+          reloadStoredState();
+        }
+      });
+      if (stateChannel) {
+        stateChannel.onmessage = (event) => {
+          if (event.data?.type === "state-updated" && getCurrentUser()) {
+            reloadStoredState();
+          }
+        };
+      }
     }
 
     ensureAdmin();
